@@ -24,7 +24,12 @@ class Request extends CI_Controller {
 	
 
 
-
+ // public function view_request() {
+	// 	$template['page'] = 'Request/view-request';
+	// 	$template['page_title'] = "View Request";
+	// 	$template['data'] = $this->request_model->get_request();
+	// 	$this->load->view('template',$template);
+	// }
 
 
 public function index() {

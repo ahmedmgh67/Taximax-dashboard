@@ -1,4 +1,4 @@
-<style>
+    <style>
     .logo{text-align:center;margin-bottom:20px;}
     .logo img{width:120px;height:auto;}
     </style>
@@ -16,7 +16,7 @@
         <div class="well col-md-5 center login-box">
         <div class="col-md-12 center login-header" style="padding-top:0px; height:130px;">
             <div class="logo">
-                <img src="<?php echo base_url().get_profile_image(); ?>" alt="">
+                <img src="<?php echo base_url(); ?>assets/images/lataxilogo.png" alt="">
             </div>
             
         </div>

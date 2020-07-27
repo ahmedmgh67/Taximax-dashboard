@@ -45,13 +45,7 @@ input::-webkit-inner-spin-button {
 
 
                   
-                    <div class="form-group">
 
-                        <label class="control-label" for="name">Password</label>
-
-                        <input type="password" name="password"  class="form-control " placeholder="Please Enter Driver Password">
-
-                    </div>
 
 
 
@@ -153,7 +147,7 @@ input::-webkit-inner-spin-button {
 
 
 
-                 <!-- <div class="form-group">
+                    <!--<div class="form-group">
                         <label class="control-label" for="password">Password</label>
                         <input type="password"  name="password" value="<?php echo $data->password; ?>" class="form-control required" placeholder="Enter Password">
                     </div>-->

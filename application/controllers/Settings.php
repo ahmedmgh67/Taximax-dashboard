@@ -33,7 +33,6 @@ class Settings extends CI_Controller {
 		if($_POST){
 			 $data=$this->input->post();
 		    if(isset($_FILES['logo'])) {  
-		        
 			    $config = $this->set_upload_options();
 			    $path = $_FILES['logo']['name'];
                 $ext = pathinfo($path, PATHINFO_EXTENSION);

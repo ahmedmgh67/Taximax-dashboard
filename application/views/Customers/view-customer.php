@@ -33,7 +33,7 @@ if($this->session->flashdata('message')) {
     <tbody>
     <?php
     foreach($data as $customer) {
-           
+
         $label = "success";
         if($customer->status == 1) {
             $rs = "Active";

@@ -138,7 +138,7 @@
 
                         <label class="control-label" for="name">Kilometre Rate</label>
 
-                        <input type="text" name="km_rate" data-parsley-pattern="^[a-zA-Z\.  \/]+$" class="form-control required" placeholder=" Please Enter the Kilometre Rate">
+                        <input type="number" name="km_rate" class="form-control required" placeholder=" Please Enter the Kilometre Rate">
 
                     </div>
 
@@ -190,7 +190,7 @@
 
                                  
 
-                    <button type="submit" class="btn btn-custom"><i class="glyphicon glyphicon-plus"></i> Add Region</button>
+                    <button type="submit" class="btn btn-custom"><i class="glyphicon glyphicon-plus"></i> Add Rate</button>
 
                 </form>
 

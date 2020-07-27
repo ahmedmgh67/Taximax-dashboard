@@ -27,7 +27,7 @@ if($this->session->flashdata('message')) {
         <th>Expiration Date</th>
         <!-- <th>Type</th> -->
         <th>Offer Amount</th>
-        <th>Usage Count</th>
+        <!-- <th>Promotype</th> -->
         <th>Actions</th>
     </tr>
     </thead>
@@ -45,7 +45,7 @@ if($this->session->flashdata('message')) {
         <td class="center"><?php echo $promocode->expiration_date; ?></td>
         <!-- <td class="center"><?php echo $promocode->type; ?></td> -->
         <td class="center"><?php echo $promocode->off; ?></td>
-        <td class="center"><?php echo $promocode->promo_usage; ?></td>
+        <!-- <td class="center"><?php echo $promocode->promo_type; ?></td> -->
 
         
        

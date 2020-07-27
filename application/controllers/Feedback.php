@@ -39,7 +39,12 @@ public function view_single_feedback() {
 	}
 
 
-
+// public function delete_feedback() {
+// 		$id = $this->uri->segment(3);
+// 		$result = $this->feedback_model->delete_feedback($id);
+// 		$this->session->set_flashdata('message', array('message' => 'Feedback Deleted Successfully','class' => 'success'));
+//      	redirect(base_url().'feedback/view_feedback');
+// 	}
 
 		
  	

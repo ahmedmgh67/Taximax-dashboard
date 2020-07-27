@@ -5,10 +5,18 @@ class Promocode_model extends CI_Model {
 	public function _consruct(){
 		parent::_construct();
  	}
-
+// function save_promocode($data) {
+// 	 $result = $this->db->insert('promocode', $data); 
+	 
+// 	 if($result) {
+// 		 return "Success";
+// 	 }
+// 	 else {
+// 		 return "Error";
+// 	 }
+// 	}
 
 	function save_promocode($data) {
-		
 	 $promo = $data['code'];
 	
 	 $this->db->where('code', $promo);
@@ -16,14 +24,14 @@ class Promocode_model extends CI_Model {
 	 $this->db->from('promocode');
 	
 	 $count = $this->db->count_all_results();
-	 
+	 //$this->db->last_query();
 	 if($count > 0) {
 		 return "Exist";
 	 }
 	 else {
 	 //	unset($data['created_user']);
 	 $result = $this->db->insert('promocode', $data); 
-	 echo $this->db->last_query();die;
+	 
 	 if($result) {
 		 return "Success";
 	 }
@@ -55,6 +63,19 @@ function get_single_promocode($id) {
 		return $result;
 	                     }	
 
+// function update_promocode($data, $id) {
+
+		
+// 	 $this->db->where('id', $id);
+// 	 $result = $this->db->update('promocode', $data); 
+
+// 	 if($result) {
+// 		 return "Success";
+// 	 }
+// 	 else {
+// 		 return "Error";
+// 	 }
+// 	}
 
 
 

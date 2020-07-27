@@ -25,10 +25,8 @@
 <!-- application script for Charisma demo -->
 <script src="<?php echo base_url();?>/assets/js/charisma.js"></script>
 <script src="<?php echo base_url();?>/assets/js/bootbox.js"></script>
-<!--<script src="http://maps.googleapis.com/maps/api/js?key=AIzaSyB1br9lwKFyEpCnS5elLan_90CCsYeak6I&libraries=places" type="text/javascript"></script> -->
-
+<!-- <script src="http://maps.googleapis.com/maps/api/js?key=AIzaSyB1br9lwKFyEpCnS5elLan_90CCsYeak6I&libraries=places" type="text/javascript"></script>  -->
 <script src="http://maps.googleapis.com/maps/api/js?key=<?php echo get_key(); ?>&libraries=places" type="text/javascript"></script> 
-
 
  <script>
             var autocomplete = new google.maps.places.Autocomplete($("#location")[0], {});

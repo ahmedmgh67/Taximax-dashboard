@@ -112,7 +112,11 @@ class Booking_model extends CI_Model {
 
 function get_single_completed($id) {
 		$query = $this->db->where('id', $id);
+		//$this->db->order_by("id","desc");
+		//$query = $this->db->order_by('id',desc);
 		$query = $this->db->get('booking');
+		//$query = $this->db->order_by('id',desc);
+		//echo $this->db->last_query();
 		$result = $query->row();
 		return $result;
 	}	

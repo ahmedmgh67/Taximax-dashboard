@@ -15,7 +15,7 @@
           <a class="navbar-brand" href="<?php echo base_url(); ?>">
             <div class="logo_1">
          <img src="<?php echo base_url().get_profile_image(); ?>" class="hidden-xs"/><br><br>
-         <p><?php echo get_app_name(); ?></p>
+         <p>Lataxi</p>
          </div>
      </a>
             

@@ -1,7 +1,7 @@
 <head>
  
     <meta charset="utf-8">
-    <title><?php echo get_app_name(); ?> | Admin</title>
+    <title> La Taxi - <?php echo $page_title; ?> </title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="">
     <meta name="author" content="">

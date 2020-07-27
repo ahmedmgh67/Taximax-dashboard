@@ -140,7 +140,7 @@
 
 
 
-                   <button type="submit" class="btn btn-custom"><i class="glyphicon glyphicon-plus"></i> Update Region</button>
+                   <button type="submit" class="btn btn-custom"><i class="glyphicon glyphicon-plus"></i> Update Rate</button>
 
                 </form>
 

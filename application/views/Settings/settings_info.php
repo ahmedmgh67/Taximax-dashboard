@@ -46,7 +46,7 @@ if($this->session->flashdata('message')) {
 
 
                     <div class="form-group">
-                        <label class="control-label" for="name">Admin Charge Percentage</label>
+                        <label class="control-label" for="name">Admin Charge</label>
                         <input type="number" name="admin_charge" class="form-control required" value="<?php echo $result->admin_charge; ?>" placeholder="Enter Charge">
                     </div>
 
@@ -54,17 +54,12 @@ if($this->session->flashdata('message')) {
                         <label class="control-label" for="name">Booking Code</label>
                         <input type="text" name="booking_code" class="form-control required" value="<?php echo $result->booking_code; ?>" placeholder="Enter Booking Code">
                     </div>
+
+                       </div>
                      <div class="form-group">
                         <label class="control-label" for="key">Key</label>
                         <input type="text" name="key" class="form-control required" value="<?php echo $result->key; ?>" placeholder="Enter the key">
                     </div>
-                    
-                    
-                    <!--      <div class="form-group">-->
-                    <!--    <label class="control-label" for="key">Key</label>-->
-                    <!--    <input type="text" name="key" class="form-control required" value="<?php echo $result->key; ?>" placeholder="Enter the key">-->
-                    <!--</div>-->
-                    
 <!--
                     <div class="form-group">
                         <label class="control-label" for="name">Tax</label>

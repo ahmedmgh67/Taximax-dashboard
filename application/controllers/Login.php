@@ -4,7 +4,8 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 class Login extends CI_Controller {
 
 	public function __construct() {
-		parent::__construct();				
+		parent::__construct();		
+		check_installer();			
 		$this->load->model('login_model');		
 		if($this->session->userdata('logged_in')) { 
 			redirect(base_url().'dashboard');
@@ -40,7 +41,7 @@ class Login extends CI_Controller {
 
 		$username = $this->input->post('username');
 		$result = $this->login_model->login($username, $password);	
-	   
+
 		if($result) {
 			  $sess_array = array(
 			    'id' => $result->id,

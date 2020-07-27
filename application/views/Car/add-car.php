@@ -24,6 +24,13 @@
                     </div>
 
 
+
+                <!--        <div class="form-group">
+                        <label class="control-label" for="image">Image</label>
+                        <input type="file" multiple name="image" class="required"class size="20" />
+
+                    </div>   -->
+
                        <div class="form-group">
                         <label class="control-label" for="image">Image</label>
                         <input type="file" multiple name="image" id="image" class="required"class size="20" />
@@ -31,7 +38,15 @@
                        
                     </div>
 
-         
+
+                   <!-- <div class="form-group">
+                        <label class="control-label" for="image">Image</label>
+                        <input type="file" multiple name="image" id="image" class="required"class size="20" />
+                        <div id="image_req" style="color: red"></div>
+                       
+                    </div>
+       -->
+                    
                     
                     <button type="submit" class="btn btn-custom new_driver"><i class="glyphicon glyphicon-plus"></i> Add Car</button>
                 </form>

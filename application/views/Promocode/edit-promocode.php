@@ -31,11 +31,6 @@
                         <label class="control-label" for="name">Offer Amount</label>
                         <input type="number" name="off" value="<?php echo $data->off; ?>" class="form-control required" placeholder="Please Enter Offer">
                     </div>
-					
-					<div class="form-group">
-                        <label class="control-label" for="name">Offer Usage Count</label>
-                        <input type="number" name="promo_usage" value="<?php echo $data->promo_usage; ?>" class="form-control required" placeholder=" Please Enter Offer Usage Count">
-                    </div>
 
 
                     <button type="submit" class="btn btn-custom"><i class="glyphicon glyphicon-plus"></i> Update Promocode</button>

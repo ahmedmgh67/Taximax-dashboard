@@ -85,6 +85,12 @@ public function view_single_approved() {
 	}
 
 
+// public function delete_promocode() {
+// 		$id = $this->uri->segment(3);
+// 		$result = $this->promocode_model->delete_promocode($id);
+// 		$this->session->set_flashdata('message', array('message' => 'Promocode Deleted Successfully','class' => 'success'));
+//      	redirect(base_url().'promocode/view_promocode');
+// 	}
 
 		
  	

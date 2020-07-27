@@ -1,1984 +1,3575 @@
-<?php
+ <?php
 
-  defined('BASEPATH')OR exit('No direct script access allowed');
 
-  // Allow from any origin
 
-  if (isset($_SERVER['HTTP_ORIGIN'])) {
+defined('BASEPATH') OR exit('No direct script access allowed');
 
-      header("Access-Control-Allow-Origin: {$_SERVER['HTTP_ORIGIN']}");
 
-      header('Access-Control-Allow-Credentials: true');
 
-      header('Access-Control-Max-Age: 86400'); // cache for 1 day
+ // Allow from any origin
 
-  }
+	if (isset($_SERVER['HTTP_ORIGIN'])) {
 
-  // Access-Control headers are received during OPTIONS requests
+        header("Access-Control-Allow-Origin: {$_SERVER['HTTP_ORIGIN']}");
 
-  if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+        header('Access-Control-Allow-Credentials: true');
 
-      if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD']))
+        header('Access-Control-Max-Age: 86400');    // cache for 1 day
 
-          header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+    }
 
-      if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']))
 
-          header("Access-Control-Allow-Headers: {$_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']}");
 
-      exit(0);
+	// Access-Control headers are received during OPTIONS requests
 
-  }
+	if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 
-  class Webservices_driver extends CI_Controller {
 
-      public function __construct() {
 
-          parent::__construct();
+		if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD']))
 
-          $this->load->model('Webservices_driver_model');
+			header("Access-Control-Allow-Methods: GET, POST, OPTIONS");         
 
-          $class = $this->router->fetch_class();
 
-          $method = $this->router->fetch_method();
 
-          if ($this->input->server('REQUEST_METHOD') == 'GET')
+		if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']))
 
-              $postdata = json_encode($_GET);
-          else if ($this->input->server('REQUEST_METHOD') == 'POST')
+			header("Access-Control-Allow-Headers: {$_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']}");
 
-              $postdata = file_get_contents("php://input");
 
-          $auth = '';
 
-          if (isset(apache_request_headers()['Auth'])) {
+		exit(0);
 
-              $auth = apache_request_headers()['Auth'];
+	}
 
-          }
 
-          $this->last_id = set_log($class, $method, $postdata, $auth);
 
-      }
 
-      public function registration() {
 
-          header('Content-type: application/json');
 
-          $postdata = file_get_contents("php://input");
 
-          $request = json_decode($postdata, true);
 
-          $result = $this->Webservices_driver_model->driver_reg($request);
 
-          header('Content-type: application/json');
 
-          if ($result['status'] == 'success') {
 
-              $result = array('status' => "success", 'data' => array('auth_token' => $result['auth_token'], 'user' => array('user_id' => $result['user_id'], 'name' => $result['name'], 'phone' => $result['phone'], 'email' => $result['email'], 'city' => $result['city'], 'profile_photo' => $result['image'], 'is_phone_verified' => true)));
+class Webservices_driver extends CI_Controller{
 
-          } else {
+	public function __construct(){
 
-              //$result = array('status'=>"error",'message' =>'Mobile Number already Exists','error'=>'201');
-              $result = array('status' => 'error', 'message' => $result['message'], 'error' => '501');
+		parent::__construct();
 
-          }
+		$this->load->model('Webservices_driver_model');
 
-          $this->response($result);
+		$class = $this->router->fetch_class();
 
-      }
+		$method = $this->router->fetch_method();
 
-      function response($res) {
+		if ($this->input->server('REQUEST_METHOD') == 'GET')
 
-          header('Content-type: application/json');
+			$postdata = json_encode($_GET);
 
-          print json_encode($res);
+		else if ($this->input->server('REQUEST_METHOD') == 'POST')
 
-      }
+			$postdata = file_get_contents("php://input");
 
-      public function login() {
+		
 
-          $postdata = file_get_contents("php://input");
+		$auth = '';
 
-          $request = json_decode($postdata, true);
 
-          $result = $this->Webservices_driver_model->login($request);
 
-          header('Content-type: application/json');
+		if(isset(apache_request_headers()['Auth'])) {
 
-          if ($result) {
+			$auth = apache_request_headers()['Auth'];
 
-              print json_encode(array('status' => 'success', 'data' => array('auth_token' => $result['auth_token'], 'user' => array('user_id' => $result['user_id'], 'name' => $result['name'], 'phone' => $result['phone'], 'email' => $result['email'], 'city' => $result['city'], 'profile_photo' => $result['profile_photo'], 'is_all_documents_uploaded' => true, 'is_all_documents_verified' => true, 'is_phone_verified' => true))));
+		}
 
-          } else {
+			
 
-              print json_encode(array('status' => 'error', 'message' => 'Unknown Credential! Try Again', 'error' => '202'));
+        $this->last_id = set_log($class,$method,$postdata,$auth);
 
-          }
+	}
 
-      }
 
-      public function update_fcm_token() {
 
-          header('Content-type: application/json');
 
-          if (isset(apache_request_headers()['Auth'])) {
 
-              $auth = apache_request_headers()['Auth'];
+	
 
-              $postdata = file_get_contents("php://input");
 
-              $request = json_decode($postdata, true);
 
-              $request['auth'] = $auth;
+	public function registration(){
 
-              // print_r($request);
+		
 
+		header('Content-type: application/json');
 
-              $result = $this->Webservices_driver_model->update_fcm($request);
+		$postdata = file_get_contents("php://input");
 
-              header('Content-type: application/json');
+    	$request = json_decode($postdata,true);
 
-              if ($result) {
 
-                  print json_encode(array('status' => 'success'));
 
-              } else {
+    	$result = $this->Webservices_driver_model->driver_reg($request);
 
-                  print json_encode(array('status' => 'error', 'message' => 'Something Went wrong', 'error' => '203'));
+    	header('Content-type: application/json');
 
-              }
 
-          } else {
 
-              print json_encode(array('status' => 'error', 'message' => 'Something Went wrong', 'error' => '204'));
+    	$otp = rand(1111,9999); 	//print_r($otp);
 
-          }
 
-      }
 
-      public function mobile_number_availability() {
 
-          header('Content-type: application/json');
 
-          $postdata = file_get_contents("php://input");
+    	if($result['status']=='success'){
 
-          $request = json_decode($postdata, true);
+			$result = array('status'=>"success",'data'=>array('auth_token'=>$result['auth_token'],'user'=>array('user_id'=>$result['user_id'],'name'=>$result['name'],'phone'=>$result['phone'],'email'=>$result['email'],'city'=>$result['city'],'profile_photo'=>$result['image'],'is_phone_verified'=>true)));
 
-          if (isset($request['phone'])) {
+    	} else {
 
-              $result = $this->Webservices_driver_model->mobile_availability($request);
+    		//$result = array('status'=>"error",'message' =>'Mobile Number already Exists','error'=>'201');
+    		$result = array('status'=>'error','message' =>$result['message'],'error'=>'501');
 
-              header('Content-type: application/json');
 
-              if ($result) {
+    	}
 
-                  print json_encode(array('status' => 'success', 'data' => array('phone' => $request['phone'], 'is_available' => filter_var($result['is_available'], FILTER_VALIDATE_BOOLEAN))));
 
-              } else {
 
-                  print json_encode(array('status' => 'success', 'data' => array('phone' => $request['phone'], 'is_available' => filter_var(true, FILTER_VALIDATE_BOOLEAN))));
+    	$this->response($result);
 
-              }
 
-          } else {
 
-              print json_encode(array('status' => 'error', 'message' => 'Mobile Number is missing. Please try again', 'error' => 'phone is missing'));
+    	
 
-          }
+	}
 
-      }
 
-      public function get_profile() {
 
-          header('Content-type: application/json');
 
-          if (isset(apache_request_headers()['Auth'])) {
 
-              $auth = apache_request_headers()['Auth'];
+	
 
-              $request = $_GET;
 
-              $request['auth'] = $auth;
 
-              $result = $this->Webservices_driver_model->profile($request);
 
-              header('Content-type: application/json');
+	
 
-              if ($result) {
 
-                  print json_encode(array('status' => 'success', 'data' => array('id' => $result['id'], 'name' => $result['name'], 'email' => $result['email'], 'phone' => $result['phone'], 'address' => $result['address'], 'city' => $result['city'], 'state' => $result['state'], 'postal_code' => $result['postal_code'], 'profile_photo' => $result['profile_photo'], 'is_phone_verified' => false)));
 
-              } else {
 
-                  print json_encode(array('status' => 'error', 'code' => '205', 'message' => 'Something Went wrong'));
 
-              }
+	function response($res){
 
-          } else {
+		
 
-              print json_encode(array('status' => 'error', 'code' => '205', 'message' => 'Something Went wrong'));
+		header('Content-type: application/json');
 
-          }
+		print json_encode($res);
 
-      }
+	}
 
-      public function update_profile() {
 
-          header('Content-type: application/json');
-          if (isset(apache_request_headers()['Auth'])) {
-              $auth = apache_request_headers()['Auth'];
-              $postdata = $_POST['profile_update'];
 
-              $request = $_POST;
-              $request['auth'] = $auth;
 
-              $email = $request['email'];
-              $phone = $request['phone'];
-              $this->db->where('email', $email);
-              $this->db->or_where("phone", $phone);
 
-              $this->db->from('driver');
-              $count = $this->db->count_all_results();
-              //print_r($count);
-              if ($count == 0) {
 
-                  $result = $this->Webservices_driver_model->prof_update($request);
-                  if ($result) {
-                      //print_r($result);
-                      print json_encode(array('status' => 'success', 'data' => array('id' => $result->id, 'name' => $result->driver_name, 'phone' => $result->phone, 'email' => $result->email, 'address' => $result->address, 'city' => $result->city, 'state' => $result->state, 'postal_code' => $result->post_code, 'profile_photo' => $result->image, 'is_phone_verified' => false)));
-                  } else {
-                      print json_encode(array('status' => 'error', 'message' => 'Something Went wrong', 'error' => '508'));
-                  }
-              } else {
-                  print json_encode(array('status' => 'error', 'message' => 'Email Already Exists', 'error' => '508'));
 
-              }
 
-          } else {
-              print json_encode(array('status' => 'error', 'message' => 'Something Went wrong', 'error' => '508'));
-          }
 
-      }
+	public function login(){
 
-      public function document_upload() {
+		
 
-          header('Content-type: application/json');
+		$postdata = file_get_contents("php://input");
 
-          if (isset(apache_request_headers()['Auth'])) {
+		$request = json_decode($postdata,true);
 
-              $auth = apache_request_headers()['Auth'];
 
-              $postdata = $_POST['profile_update'];
 
-              if (is_uploaded_file($_FILES['image']['tmp_name'])) {
+		$result = $this->Webservices_driver_model->login($request);
 
-                  $uploads_dir = './assets/uploads/document/';
+		header('Content-type: application/json');
 
-                  $tmp_name = $_FILES['image']['tmp_name'];
 
-                  $pic_name = $_FILES['image']['name'];
 
-                  $pic_name = str_replace(' ', '_', mt_rand().$pic_name);
+		if($result){
 
-                  move_uploaded_file($tmp_name, $uploads_dir.$pic_name);
+			print json_encode(array('status' => 'success','data'=>array('auth_token'=>$result['auth_token'],'user'=>array('user_id'=>$result['user_id'],'name'=>$result['name'],'phone'=>$result['phone'],'email'=>$result['email'],'city'=>$result['city'],'profile_photo'=>$result['profile_photo'],'is_all_documents_uploaded'=>true,'is_all_documents_verified'=>true,'is_phone_verified'=>true))));
 
-                  $request = $_POST;
+		}else{
 
-                  $request['image'] = $uploads_dir.$pic_name;
+			print json_encode(array('status' => 'error','message'=>'Unknown Credential! Try Again','error'=>'202'));
 
-                  $request['auth'] = $auth;
+		}
 
-                  $result = $this->Webservices_driver_model->doc_upload($request);
 
-                  header('Content-type: application/json');
 
-                  if ($result) {
+	}
 
-                      print json_encode(array('status' => 'success'));
 
-                  } else {
 
-                      print json_encode(array('status' => 'error', 'message' => 'Something Went wrong', 'error' => '207'));
 
-                  }
 
-              } else {
 
-                  print json_encode(array('status' => 'error', 'message' => 'Something Went wrong', 'error' => '207'));
 
-              }
+	public function update_fcm_token(){
 
-          } else {
+		
 
-              print json_encode(array('status' => 'error', 'message' => 'Something Went wrong', 'error' => '207'));
+		header('Content-type: application/json');
 
-          }
+		if(isset(apache_request_headers()['Auth'])) {
 
-      }
+            $auth = apache_request_headers()['Auth'];
 
-      public function document_status() {
+			$postdata = file_get_contents("php://input");
 
-          header('Content-type: application/json');
+			$request = json_decode($postdata,true);
 
-          if (isset(apache_request_headers()['Auth'])) {
+			$request['auth'] = $auth;
 
-              $auth = apache_request_headers()['Auth'];
+			//print_r($request);
 
-              $postdata = file_get_contents("php://input");
 
-              $request['auth'] = $auth;
 
-              $result = $this->Webservices_driver_model->doc_status($request);
+			$result = $this->Webservices_driver_model->update_fcm($request);
 
-              header('Content-type: application/json');
+			header('Content-type: application/json');
 
-              if ($result) {
+			if($result){
 
-                  print json_encode(array('status' => 'success', 'data' => array('documents' => $result)));
+				print json_encode(array('status' => 'success'));
 
-              } else {
+			} else {
 
-                  print json_encode(array('status' => 'error', 'code' => '209', 'message' => 'Something Went wrong'));
+				print json_encode(array('status' => 'error','message'=>'Something Went wrong','error'=>'203'));
 
-              }
+			}
 
-          } else {
+		} else {
 
-              print json_encode(array('status' => 'error', 'code' => '209', 'message' => 'Something Went wrong'));
+			print json_encode(array('status' => 'error','message'=>'Something Went wrong','error'=>'203'));
 
-          }
+		}
 
-      }
+		
 
-      public function get_driver_status() {
 
-          header('Content-type: application/json');
 
-          if (isset(apache_request_headers()['Auth'])) {
+	}
 
-              $auth = apache_request_headers()['Auth'];
 
-              $postdata = file_get_contents("php://input");
 
-              $request['auth'] = $auth;
 
-              $result = $this->Webservices_driver_model->driver_status($request);
 
-              header('Content-type: application/json');
 
-              if ($result) {
 
-                  print json_encode(array('status' => 'success', 'data' => $result));
 
-              } else {
 
-                  print json_encode(array('status' => 'error', 'code' => '209', 'message' => 'Something Went wrong'));
 
-              }
 
-          } else {
 
-              print json_encode(array('status' => 'error', 'code' => '209', 'message' => 'Something Went wrong'));
 
-          }
+	public function mobile_number_availability(){
 
-      }
+		
 
-      public function update_driver_type() {
+		header('Content-type: application/json');
 
-          header('Content-type: application/json');
+		$postdata = file_get_contents("php://input");
 
-          if (isset(apache_request_headers()['Auth'])) {
+		$request = json_decode($postdata,true);
 
-              $auth = apache_request_headers()['Auth'];
 
-              $postdata = file_get_contents("php://input");
 
-              $request = json_decode($postdata, true);
 
-              $request['auth'] = $auth;
 
-              $result = $this->Webservices_driver_model->type_driver($request);
+		if(isset($request['phone'])){	
 
-              header('Content-type: application/json');
+			$result = $this->Webservices_driver_model->mobile_availability($request);
 
-              if ($result) {
+			header('Content-type: application/json');
 
-                  print json_encode(array('status' => 'success'));
 
-              } else {
 
-                  print json_encode(array('status' => 'error', 'code' => '208', 'message' => 'Something Went wrong'));
+			if($result){
 
-              }
+				print json_encode(array('status'=>'success','data'=>array('phone'=>$request['phone'],'is_available'=>filter_var ($result['is_available'], FILTER_VALIDATE_BOOLEAN))));
 
-          } else {
 
-              print json_encode(array('status' => 'error', 'code' => '208', 'message' => 'Something Went wrong'));
 
-          }
+			}else{
 
-      }
+			
 
-      public function profile_photo_upload() {
+				print json_encode(array('status'=>'success','data'=> array('phone'=>$request['phone'],'is_available'=>filter_var (true, FILTER_VALIDATE_BOOLEAN))));
 
-          header('Content-type: application/json');
+			}
 
-          if (isset(apache_request_headers()['Auth'])) {
+		}else{
 
-              $auth = apache_request_headers()['Auth'];
+			print json_encode(array('status'=>'error','message'=>'Mobile Number is missing. Please try again','error'=>'phone is missing'));
 
-              $postdata = $_POST['profile_update'];
-			  //print_r($postdata);exit;
+		}
 
-              
+	}
 
-              if (is_uploaded_file($_FILES['image']['tmp_name'])) {
-					//print_r($_FILES['image']['tmp_name']);
-                  $uploads_dir = './assets/uploads/driver/';
 
-                  $tmp_name = $_FILES['image']['tmp_name'];
 
-                  $pic_name = $_FILES['image']['name'];
 
-                  $pic_name = str_replace(' ', '_', mt_rand().$pic_name);
 
-                  move_uploaded_file($tmp_name, $uploads_dir.$pic_name);
 
-                  $request = $_POST;
 
-                  $request['image'] = $uploads_dir.$pic_name;
+	public function get_profile(){
 
-                  $request['auth'] = $auth;
+		
 
-                  $result = $this->Webservices_driver_model->photo_upload($request);
+		header('Content-type: application/json');
 
-                  header('Content-type: application/json');
+		if(isset(apache_request_headers()['Auth'])) {
 
-                  if ($result) {
+            $auth = apache_request_headers()['Auth'];		
 
-                      print json_encode(array('status' => 'success'));
+	
 
-                  } else {
+			$request = $_GET;
 
-                      print json_encode(array('status' => 'error', 'message' => 'Something Went wrong', 'error' => '2071'));
+			$request['auth'] = $auth;
 
-                  }
+			
 
-              } else {
 
-                  print json_encode(array('status' => 'error', 'message' => 'Something Went wrong', 'error' => '2027'));
 
-              }
+			$result = $this->Webservices_driver_model->profile($request);
 
-          } else {
+			header('Content-type: application/json');
 
-              print json_encode(array('status' => 'error', 'message' => 'Something Went wrong', 'error' => '207'));
+			if($result){
 
-          }
+				print json_encode(array('status' => 'success','data'=>array('id'=>$result['id'],'name'=>$result['name'],'email'=>$result['email'],'phone'=>$result['phone'],'address'=>$result['address'],'city'=>$result['city'],'state'=>$result['state'],'postal_code'=>$result['postal_code'],'profile_photo'=>$result['profile_photo'],'is_phone_verified'=>false)));
 
-      }
+			} else {
 
-      public function update_driver_status() {
+				print json_encode(array('status' => 'error','code'=>'205','message'=>'Something Went wrong'));
 
-          header('Content-type: application/json');
+			}
 
-          if (isset(apache_request_headers()['Auth'])) {
+  
 
-              $auth = apache_request_headers()['Auth'];
+		} else {
 
-              $postdata = file_get_contents("php://input");
+			   print json_encode(array('status' => 'error','code'=>'205','message'=>'Something Went wrong'));
 
-              $request = json_decode($postdata, true);
+		}
 
-              $request['auth'] = $auth;
+		
 
-              //print_r($auth);
+	}
 
-              if (isset($request['driver_status'])) {
 
-                  $result = $this->Webservices_driver_model->status($request);
 
-                  header('Content-type: application/json');
 
-                  if ($result) {
 
-                      print json_encode(array('status' => 'success'));
 
-                      //$this->updatedriver_status($request);
 
-                      $this->Webservices_driver_model->driver_onstatus($request);
 
-                  } else {
 
-                      print json_encode(array('status' => 'error', 'code' => '208', 'message' => 'Something Went wrong'));
 
-                  }
 
-              } else {
 
-                  print json_encode(array('status' => 'error', 'code' => '208', 'message' => 'Something Went wrong'));
 
-              }
 
-              //'a534457488937db4b21d0a043eb6581a'
 
-          } else {
 
-              print json_encode(array('status' => 'error', 'code' => '208', 'message' => 'Something Went wrong'));
 
-          }
+	// public function update_profile(){
 
-      }
+		
 
-      public function trip_accept() {
+	// 	header('Content-type: application/json');
 
-          header('Content-type: application/json');
+	// 	if(isset(apache_request_headers()['Auth'])) {
 
-          if (isset(apache_request_headers()['Auth'])) {
+ //            $auth = apache_request_headers()['Auth'];	
 
-              $auth = apache_request_headers()['Auth'];
+ //            $postdata= $_POST['profile_update'];
 
-              $postdata = file_get_contents("php://input");
 
-              $request = json_decode($postdata, true);
 
-              $request['auth'] = $auth;
 
-              $data = $this->db->where('id', $request['request_id'])->get('request')->row();
-              //echo $this->db->last_query();die();
-              //print_r($data->status);
-              if ($data->status == 1) {
-                  print json_encode(array('status' => 'error', 'message' => 'Trip Assigned '));
-              }
-              elseif($data->status == 3) {
-                  print json_encode(array('status' => 'error', 'message' => 'Trip Cancelled '));
-              }
-              else {
 
-                  $result = $this->Webservices_driver_model->accept($request);
+	// 		$request = $_POST;
 
-                  header('Content-type: application/json');
+	// 		$request['auth'] = $auth;
 
-                  if ($result) {
 
-                      print json_encode(array('status' => 'success', 'data' => $result));
 
-                  } else {
+			
 
-                      print json_encode(array('status' => 'error', 'code' => '207', 'message' => 'Something Went wrong'));
 
-                  }
-              }
 
-          } else {
+	// 		$result = $this->Webservices_driver_model->prof_update($request);
 
-              print json_encode(array('status' => 'error', 'code' => '208', 'message' => 'Something Went wrong'));
+	// 		if($result){
 
-          }
+	// 			//print_r($result);
 
-      }
+	// 		print json_encode(array('status' => 'success','data'=>array('id'=>$result->id,'name'=>$result->driver_name,'phone'=>$result->phone,'email'=>$result->email,'address'=>$result->address,'city'=>$result->city,'state'=>$result->state,'postal_code'=>$result->post_code,'profile_photo'=>$result->image,'is_phone_verified'=>false)));
 
-      public function trip_start() {
+	// 		} else {
 
-          header('Content-type: application/json');
+	// 			print json_encode(array('status' => 'error','message'=>'Something Went wrong','error'=>'508'));
 
-          if (isset(apache_request_headers()['Auth'])) {
+	// 		}
 
-              $auth = apache_request_headers()['Auth'];
+		
 
-              $postdata = file_get_contents("php://input");
+	// } else {
 
-              $request = json_decode($postdata, true);
+	// 		print json_encode(array('status' => 'error','message'=>'Something Went wrong','error'=>'508'));
 
-              $request['auth'] = $auth;
+	// 	}
 
-              if (isset($request['trip_id'])) {
 
-                  $result = $this->Webservices_driver_model->start_trip($request);
 
-                  header('Content-type: application/json');
+	// }
 
-                  if ($result) {
 
-                      print json_encode(array('status' => 'success'));
 
-                  } else {
+	public function update_profile(){
+		
+		header('Content-type: application/json');
+		if(isset(apache_request_headers()['Auth'])) {
+            $auth = apache_request_headers()['Auth'];	
+            $postdata= $_POST['profile_update'];
 
-                      print json_encode(array('status' => 'error', 'code' => '209', 'message' => 'Something Went wrong'));
 
-                  }
+			$request = $_POST;
+			$request['auth'] = $auth;
 
-              } else {
+			$email = $request['email'];
+	  			$phone = $request['phone'];
+				$this->db->where('email', $email);
+				$this->db->or_where("phone",$phone);
 
-                  print json_encode(array('status' => 'error', 'code' => '209', 'message' => 'Something Went wrong'));
+		 		$this->db->from('driver');
+		 		$count = $this->db->count_all_results();
+			//print_r($count);
+			if($count == 0){
 
-              }
+			$result = $this->Webservices_driver_model->prof_update($request);
+			if($result){
+				//print_r($result);
+			print json_encode(array('status' => 'success','data'=>array('id'=>$result->id,'name'=>$result->driver_name,'phone'=>$result->phone,'email'=>$result->email,'address'=>$result->address,'city'=>$result->city,'state'=>$result->state,'postal_code'=>$result->post_code,'profile_photo'=>$result->image,'is_phone_verified'=>false)));
+			} else {
+				print json_encode(array('status' => 'error','message'=>'Something Went wrong','error'=>'508'));
+			}
+		}else{
+				print json_encode(array('status' => 'error','message'=>'Email Already Exists','error'=>'508'));
 
-              //'a534457488937db4b21d0a043eb6581a'
+		}
+		
+	} else {
+			print json_encode(array('status' => 'error','message'=>'Something Went wrong','error'=>'508'));
+		}
 
-          } else {
+	}
 
-              print json_encode(array('status' => 'error', 'code' => '209', 'message' => 'Something Went wrong'));
 
-          }
 
-      }
 
-      public function help() {
 
-          header('Content-type: application/json');
 
-          if (isset(apache_request_headers()['Auth'])) {
 
-              $auth = apache_request_headers()['Auth'];
 
-              $postdata = file_get_contents("php://input");
 
-              $request = $_GET;
+	
 
-              $request['auth'] = $auth;
+	
 
-              $result = $this->Webservices_driver_model->help_pages($request);
+	public function document_upload(){
 
-              header('Content-type: application/json');
+		
 
-              if (isset($request['id'])) {
+		header('Content-type: application/json');
 
-                  if ($result) {
+		if(isset(apache_request_headers()['Auth'])) {
 
-                      $query = $this->db->where('unique_id', $request['auth'])->get('driver_auth_table');
+            $auth = apache_request_headers()['Auth'];	
 
-                      $rs = $query->row();
+            $postdata= $_POST['profile_update'];
 
-                      $driv_id = $rs->driver_id;
 
-                      $is_help = $this->Webservices_driver_model->is_help_status($driv_id, $result['id']);
 
-                      $rs->is_helpful = $is_help;
+             if(is_uploaded_file($_FILES['image']['tmp_name'])){ 
 
-                      print json_encode(array('status' => 'success', 'data' => array('id' => $result['id'], 'title' => $result['title'], 'icon' => $result['icon'], 'content' => $result['content'], 'is_helpful' => $is_help)));
+             	$uploads_dir = './assets/uploads/profile_pic/';
 
-                  } else {
+             	$tmp_name = $_FILES['image']['tmp_name'];
 
-                      print json_encode(array('status' => 'error', 'code' => '209', 'message' => 'Something Went wrong'));
+             	$pic_name = $_FILES['image']['name']; 
 
-                  }
+             	$pic_name = str_replace(' ', '_', mt_rand().$pic_name);
 
-              } else {
+             	move_uploaded_file($tmp_name, $uploads_dir.$pic_name);
 
-                  print json_encode(array('status' => 'error', 'code' => '209', 'message' => 'Something Went wrong'));
+             	
 
-              }
 
-              //'a534457488937db4b21d0a043eb6581a'
 
-          } else {
+			$request = $_POST;		
 
-              print json_encode(array('status' => 'error', 'code' => '209', 'message' => 'Something Went wrong'));
+			$request['image'] = $uploads_dir.$pic_name;	
 
-          }
+			$request['auth'] = $auth;
 
-      }
 
-      public function help_page_list() {
 
-          header('Content-type: application/json');
+			
 
-          if (isset(apache_request_headers()['Auth'])) {
 
-              $auth = apache_request_headers()['Auth'];
 
-              $postdata = file_get_contents("php://input");
+			$result = $this->Webservices_driver_model->doc_upload($request);
 
-              //$request = $_GET;
+			header('Content-type: application/json');
 
-              $request['auth'] = $auth;
+			
 
-              $result = $this->Webservices_driver_model->help_list($request);
+			if($result){
 
-              header('Content-type: application/json');
+				print json_encode(array('status' => 'success'));
 
-              if ($result) {
 
-                  print json_encode(array('status' => 'success', 'data' => array('help' => $result)));
 
-              } else {
+			} else {
 
-                  print json_encode(array('status' => 'error', 'code' => '209', 'message' => 'Something Went wrong'));
+				print json_encode(array('status' => 'error','message'=>'Something Went wrong','error'=>'207'));
 
-              }
+			}
 
-              //'a534457488937db4b21d0a043eb6581a'
+		} else {
 
-          } else {
+			print json_encode(array('status' => 'error','message'=>'Something Went wrong','error'=>'207'));
 
-              print json_encode(array('status' => 'error', 'code' => '209', 'message' => 'Something Went wrong'));
+		}
 
-          }
+		
 
-      }
+	}else{
 
-      public function help_page_review() {
+			print json_encode(array('status' => 'error','message'=>'Something Went wrong','error'=>'207'));
 
-          header('Content-type: application/json');
 
-          if (isset(apache_request_headers()['Auth'])) {
 
-              $auth = apache_request_headers()['Auth'];
+	}
 
-              $postdata = file_get_contents("php://input");
 
-              $request = json_decode($postdata, true);
 
-              $request['auth'] = $auth;
+}
 
-              $result = $this->Webservices_driver_model->help_review($request);
 
-              header('Content-type: application/json');
 
-              if ($result) {
 
-                  print json_encode(array('status' => 'success'));
 
-              } else {
 
-                  print json_encode(array('status' => 'error', 'code' => '208', 'message' => 'Something Went wrong'));
 
-              }
+	public function document_status(){
 
-          } else {
+		
 
-              print json_encode(array('status' => 'error', 'code' => '208', 'message' => 'Something Went wrong'));
+		header('Content-type: application/json');
 
-          }
+		if(isset(apache_request_headers()['Auth'])) {
 
-      }
+            $auth = apache_request_headers()['Auth'];		
 
-      public function update_vehicle_details() {
+			$postdata = file_get_contents("php://input");
 
-          header('Content-type: application/json');
+			$request['auth'] = $auth;
 
-          if (isset(apache_request_headers()['Auth'])) {
 
-              $auth = apache_request_headers()['Auth'];
 
-              $postdata = file_get_contents("php://input");
 
-              $request = json_decode($postdata, true);
 
-              $request['auth'] = $auth;
+			$result = $this->Webservices_driver_model->doc_status($request);
 
-              $result = $this->Webservices_driver_model->update_vehicle($request);
+			header('Content-type: application/json');
 
-              header('Content-type: application/json');
+			if($result){
 
-              if ($result) {
+				print json_encode(array('status' => 'success','data' => array('documents'=>$result)));
 
-                  print json_encode(array('status' => 'success'));
 
-              } else {
 
-                  print json_encode(array('status' => 'error', 'code' => '210', 'message' => 'Something Went wrong'));
+			} else {
 
-              }
+				print json_encode(array('status' => 'error','code'=>'209','message'=>'Something Went wrong'));
 
-          } else {
+			}
 
-              print json_encode(array('status' => 'error', 'code' => '210', 'message' => 'Something Went wrong'));
+		} else {
 
-          }
+			print json_encode(array('status' => 'error','code'=>'209','message'=>'Something Went wrong'));
 
-      }
+		}
 
-      public function update_accesibility_settings() {
+		
 
-          header('Content-type: application/json');
+	}
 
-          if (isset(apache_request_headers()['Auth'])) {
 
-              $auth = apache_request_headers()['Auth'];
 
-              $postdata = file_get_contents("php://input");
 
-              $request = json_decode($postdata, true);
 
-              $request['auth'] = $auth;
 
-              $result = $this->Webservices_driver_model->update_settings($request);
 
-              header('Content-type: application/json');
+	public function get_driver_status(){
 
-              if ($result) {
+		
 
-                  print json_encode(array('status' => 'success'));
+		header('Content-type: application/json');
 
-              } else {
+		if(isset(apache_request_headers()['Auth'])) {
 
-                  print json_encode(array('status' => 'error', 'code' => '208', 'message' => 'Something Went wrong'));
+            $auth = apache_request_headers()['Auth'];		
 
-              }
+			$postdata = file_get_contents("php://input");
 
-          } else {
+			$request['auth'] = $auth;
 
-              print json_encode(array('status' => 'error', 'code' => '208', 'message' => 'Something Went wrong'));
 
-          }
 
-      }
 
-      public function fetch_accesibility_settings() {
 
-          header('Content-type: application/json');
+			$result = $this->Webservices_driver_model->driver_status($request);
 
-          if (isset(apache_request_headers()['Auth'])) {
+			header('Content-type: application/json');
 
-              $auth = apache_request_headers()['Auth'];
+			if($result){
 
-              $request = $_GET;
+				print json_encode(array('status' => 'success','data' => $result));
 
-              $request['auth'] = $auth;
 
-              $result = $this->Webservices_driver_model->fetch_settings($request);
 
-              header('Content-type: application/json');
+			} else {
 
-              if ($result) {
+				print json_encode(array('status' => 'error','code'=>'209','message'=>'Something Went wrong'));
 
-                  print json_encode(array('status' => 'success', 'data' => array('is_deaf' => filter_var($result['is_deaf'], FILTER_VALIDATE_BOOLEAN), 'is_flash_required_for_requests' => filter_var($result['is_flash_required_for_requests'], FILTER_VALIDATE_BOOLEAN))));
+			}
 
-              } else {
+		} else {
 
-                  print json_encode(array('status' => 'error', 'code' => '209', 'message' => 'Something Went wrong'));
+			print json_encode(array('status' => 'error','code'=>'209','message'=>'Something Went wrong'));
 
-              }
+		}
 
-          } else {
+		
 
-              print json_encode(array('status' => 'error', 'code' => '209', 'message' => 'Something Went wrong'));
+	}
 
-          }
 
-      }
 
-      public function update_driver_location() {
 
-          header('Content-type: application/json');
 
-          if (isset(apache_request_headers()['Auth'])) {
 
-              $auth = apache_request_headers()['Auth'];
 
-              $postdata = file_get_contents("php://input");
 
-              $request = json_decode($postdata, true);
 
-              $request['auth'] = $auth;
+	public function update_driver_type(){
 
-              $result = $this->Webservices_driver_model->driver_location($request);
+		
 
-              header('Content-type: application/json');
+		header('Content-type: application/json');
 
-              if ($result) {
+		if(isset(apache_request_headers()['Auth'])) {
 
-                  print json_encode(array('status' => 'success'));
+            $auth = apache_request_headers()['Auth'];		
 
-              } else {
+			$postdata = file_get_contents("php://input");
 
-                  print json_encode(array('status' => 'error', 'code' => '209', 'message' => 'Something Went wrong'));
 
-              }
 
-          } else {
+			$request = json_decode($postdata,true);
 
-              print json_encode(array('status' => 'error', 'code' => '209', 'message' => 'Something Went wrong'));
+			$request['auth'] = $auth;
 
-          }
 
-      }
 
-      public function request_details($request_id = null) {
+			$result = $this->Webservices_driver_model->type_driver($request);
 
-          header('Content-type: application/json');
+			header('Content-type: application/json');
 
-          if (isset(apache_request_headers()['Auth'])) {
+			if($result){
 
-              $auth = apache_request_headers()['Auth'];
+				print json_encode(array('status' => 'success'));
 
-              $request = $_GET;
+			} else {
 
-              $request['auth'] = $auth;
+				print json_encode(array('status' => 'error','code'=>'208','message'=>'Something Went wrong'));
 
-              if (isset($request['request_id'])) {
+			}
 
-                  $result = $this->Webservices_driver_model->req_details($request);
+		} else {
 
-                  header('Content-type: application/json');
+			print json_encode(array('status' => 'error','code'=>'208','message'=>'Something Went wrong'));
 
-                  if (count($result) > 0) {
+		}
 
-                      $result->request_id = $request['request_id'];
+		
 
-                      $car_image = $this->Webservices_driver_model->car_type_image($result->car_type);
+	}
 
-                      $result->car_type_image = $car_image;
 
-                      $car_type = $this->Webservices_driver_model->car_type($result->car_type);
 
-                      $result->car_type = $car_type;
 
-                      // 	$is_help = $this->Webservices_driver_model->is_help_status($driv_id,$result['id']);
 
-                      // $rs->is_helpful = $is_help;
 
 
-                      print json_encode(array('status' => 'success', 'data' => $result));
+	public function profile_photo_upload(){
 
-                  } else {
 
-                      print json_encode(array('status' => 'error'));
 
-                  }
+		
 
-              } else {
+		header('Content-type: application/json');
 
-                  print json_encode(array('status' => 'error', 'error' => '209', 'message' => 'Something Went wrong'));
+		if(isset(apache_request_headers()['Auth'])) {
 
-              }
+            $auth = apache_request_headers()['Auth'];	
 
-          } else {
+            $postdata= $_POST['profile_update'];
 
-              print json_encode(array('status' => 'error', 'error' => '209', 'message' => 'Something Went wrong'));
+            print_r($postdata);
 
-          }
+  			
 
-      }
+             if(is_uploaded_file($_FILES['image']['tmp_name'])){ 
 
-      public function trip_summary($id = null) {
+             	$uploads_dir = './assets/uploads/profile_pic/';
 
-          header('Content-type: application/json');
+             	$tmp_name = $_FILES['image']['tmp_name'];
 
-          if (isset(apache_request_headers()['Auth'])) {
+             	$pic_name = $_FILES['image']['name']; 
 
-              $request = $_GET;
+             	$pic_name = str_replace(' ', '_', mt_rand().$pic_name);
 
-              if (isset($request['trip_id'])) {
+             	move_uploaded_file($tmp_name, $uploads_dir.$pic_name);
 
-                  $result = $this->Webservices_driver_model->summary_trip($request);
+             	
 
-                  header('Content-type: application/json');
 
-                  if (count($result) > 0) {
 
-                      // print_r($result);
+            
 
-                      // $pattern = $result['pattern_id'];
+			$request = $_POST;		
 
-                      // print_r($pattern);
+			$request['image'] = $uploads_dir.$pic_name;	
 
+			$request['auth'] = $auth;
 
-                      print json_encode(array('status' => 'success', 'data' => $result));
 
-                  } else {
 
-                      print json_encode(array('status' => 'error', 'code' => '209', 'message' => 'Something Went wrong'));
+			
 
-                  }
 
-              } else {
 
-                  print json_encode(array('status' => 'error', 'code' => '209', 'message' => 'Something Went wrong'));
+			$result = $this->Webservices_driver_model->photo_upload($request);
 
-              }
+			header('Content-type: application/json');
 
-          } else {
+			
 
-              print json_encode(array('status' => 'error', 'code' => '209', 'message' => 'Something Went wrong'));
+			if($result){
 
-          }
+				print json_encode(array('status' => 'success'));
 
-      }
 
-      public function app_status() {
 
-          header('Content-type: application/json');
+			} else {
 
-          if (isset(apache_request_headers()['Auth'])) {
+				print json_encode(array('status' => 'error','message'=>'Something Went wrong','error'=>'207'));
 
-              $auth = apache_request_headers()['Auth'];
+			}
 
-              $request['auth'] = $auth;
+		} else {
 
-              $result = $this->Webservices_driver_model->statusof_app($request);
+			print json_encode(array('status' => 'error','message'=>'Something Went wrong','error'=>'207'));
 
-              header('Content-type: application/json');
+		}
 
-              if ($result) {
-                  $result->app_status = '1';
-                  //print_r($result->trip_id);
-                  $drvr_status = $this->Webservices_driver_model->status_driver($result->trip_id);
-                  $result->driver_status = $drvr_status;
-                  print json_encode(array('status' => 'success', 'data' => $result));
-              } else {
-                  print json_encode(array('status' => 'success', 'data' => array('app_status' => '0')));
-              }
+		
 
-          } else {
+	}else{
 
-              print json_encode(array('status' => 'error', 'code' => '209', 'message' => 'Something Went wrong'));
+		print json_encode(array('status' => 'error','message'=>'Something Went wrong','error'=>'207'));
 
-          }
 
-      }
 
-      public function confirm_car_arrival() {
+	}
 
-          header('Content-type: application/json');
+}
 
-          if (isset(apache_request_headers()['Auth'])) {
 
-              $auth = apache_request_headers()['Auth'];
 
-              $postdata = file_get_contents("php://input");
 
-              $request = json_decode($postdata, true);
 
-              $request['auth'] = $auth;
 
-              if (isset($request['trip_id'])) {
 
-                  $result = $this->Webservices_driver_model->confirm_arrival($request);
 
-                  header('Content-type: application/json');
 
-                  if ($result) {
 
-                      print json_encode(array('status' => 'success'));
 
-                  } else {
 
-                      print json_encode(array('status' => 'error', 'code' => '208', 'message' => 'Something Went wrong'));
 
-                  }
 
-              } else {
 
-                  print json_encode(array('status' => 'error', 'code' => '208', 'message' => 'Something Went wrong'));
 
-              }
 
-          } else {
+public function update_driver_status(){
 
-              print json_encode(array('status' => 'error', 'code' => '208', 'message' => 'Something Went wrong'));
+		
 
-          }
+		header('Content-type: application/json');
 
-      }
+		if(isset(apache_request_headers()['Auth'])) {
 
-      public function confirm_cash_collection() {
+            $auth = apache_request_headers()['Auth'];		
 
-          header('Content-type: application/json');
+			$postdata = file_get_contents("php://input");
 
-          if (isset(apache_request_headers()['Auth'])) {
 
-              $auth = apache_request_headers()['Auth'];
 
-              $postdata = file_get_contents("php://input");
+			$request = json_decode($postdata,true);
 
-              $request = json_decode($postdata, true);
+			$request['auth'] = $auth;
 
-              $request['auth'] = $auth;
+			//print_r($auth);
 
-              if (isset($request['trip_id'])) {
+			if(isset($request['driver_status'])){
 
-                  $result = $this->Webservices_driver_model->confirm_cash($request);
 
-                  header('Content-type: application/json');
 
-                  if ($result) {
+			$result = $this->Webservices_driver_model->status($request);
 
-                      print json_encode(array('status' => 'success'));
+			header('Content-type: application/json');
 
-                  } else {
+			if($result){
 
-                      print json_encode(array('status' => 'error', 'code' => '208', 'message' => 'Something Went wrong'));
+				
 
-                  }
+				print json_encode(array('status' => 'success'));
 
-              } else {
+				//$this->updatedriver_status($request);
 
-                  print json_encode(array('status' => 'error', 'code' => '208', 'message' => 'Something Went wrong'));
+				$this->Webservices_driver_model->driver_onstatus($request);
 
-              }
+			} else {
 
-          } else {
+				print json_encode(array('status' => 'error','code'=>'208','message'=>'Something Went wrong'));
 
-              print json_encode(array('status' => 'error', 'code' => '208', 'message' => 'Something Went wrong'));
+			}
 
-          }
+		}else{
 
-      }
+				print json_encode(array('status' => 'error','code'=>'208','message'=>'Something Went wrong'));
 
-      public function rider_feedback_issues() {
 
-          header('Content-type: application/json');
 
-          if (isset(apache_request_headers()['Auth'])) {
+		}
 
-              $auth = apache_request_headers()['Auth'];
+            //'a534457488937db4b21d0a043eb6581a'
 
-              $request['auth'] = $auth;
+		} else {
 
-              $page = $_GET['page'] >= 1 ? $_GET['page'] : 1;
+			print json_encode(array('status' => 'error','code'=>'208','message'=>'Something Went wrong'));
 
-              $result = $this->Webservices_driver_model->ride_feedback($request);
+		}
 
-              header('Content-type: application/json');
+		
 
-              if ($result) {
+	}
 
-                  $total = count((array)$result);
 
-                  $per_page = 20;
 
-                  $total_pages = ceil($total / $per_page);
 
-                  $current_page = $page;
 
-                  print json_encode(array('status' => 'success', 'data' => array('issues' => $result), 'meta' => array('total' => $total, 'per_page' => $per_page, 'total_pages' => $total_pages, 'current_page' => $current_page)));
 
-              } else {
 
-                  print json_encode(array('status' => 'success', 'data' => []));
 
-              }
 
-          } else {
 
-              print json_encode(array('status' => 'error', 'message' => 'Something Went wrong', 'error' => '503'));
 
-          }
 
-      }
 
-      public function rider_feedback_comments() {
+	public function trip_accept(){
 
-          header('Content-type: application/json');
+		
 
-          if (isset(apache_request_headers()['Auth'])) {
+		header('Content-type: application/json');
 
-              $auth = apache_request_headers()['Auth'];
+		if(isset(apache_request_headers()['Auth'])) {
 
-              $request['auth'] = $auth;
+            $auth = apache_request_headers()['Auth'];		
 
-              $page = $_GET['page'] >= 1 ? $_GET['page'] : 1;
+			$postdata = file_get_contents("php://input");
 
-              $result = $this->Webservices_driver_model->feedback_comments($request);
+			$request = json_decode($postdata,true);
 
-              header('Content-type: application/json');
+			$request['auth'] = $auth;
 
-              if ($result) {
 
-                  //print_r($result);
 
-                  //$start_time =$result['trip_id'];
+			$result = $this->Webservices_driver_model->accept($request);
 
-                  //print_r($start_time);
+			header('Content-type: application/json');
 
+			if($result){
 
-                  // $total = $this->db->query($result)->num_rows();
+				print json_encode(array('status' => 'success','data'=>$result));
 
+			} else {
 
-                  $total = count((array)$result);
-                  //	print_r($total);
+				print json_encode(array('status' => 'error'));
 
-                  $per_page = 20;
+			}
 
-                  $total_pages = ceil($total / $per_page);
+		} else {
 
-                  $current_page = $page;
+			print json_encode(array('status' => 'error','code'=>'208','message'=>'Something Went wrong'));
 
-                  print json_encode(array('status' => 'success', 'data' => array('comments' => $result), 'meta' => array('total' => $total, 'per_page' => $per_page, 'total_pages' => $total_pages, 'current_page' => $current_page)));
+		}
 
-              } else {
+		
 
-                  print json_encode(array('status' => 'success', 'data' => []));
+	}
 
-              }
 
-          } else {
 
-              print json_encode(array('status' => 'error', 'message' => 'Something Went wrong', 'error' => '503'));
 
-          }
 
-      }
 
-      public function rating_details() {
 
-          header('Content-type: application/json');
+	// public function trip_start(){
 
-          if (isset(apache_request_headers()['Auth'])) {
 
-              $auth = apache_request_headers()['Auth'];
 
-              //$postdata = file_get_contents("php://input");
+	// 	$postdata = file_get_contents("php://input");
 
-              $request = $_GET;
+	// 	$request = json_decode($postdata,true);
 
-              $request['auth'] = $auth;
+	// 	print_r($request);
 
-              $result = $this->Webservices_driver_model->rating($request);
+		
 
-              header('Content-type: application/json');
+	// 	$result = $this->Webservices_driver_model->start_trip($request);
 
-              if ($result) {
 
-                  //$str =(int)$result->average_rating;
 
-                  //$str = preg_replace('/"([^"]+)"\s*:\s*/', '$1:', $str);
+	// 	if($result){
 
-                  //print_r($str);
+	// 		print json_encode(array('status'=>'success'));
 
-                  //echo trim($str, '"');
+	// 	}else{
 
-                  $query = $this->db->where('unique_id', $request['auth'])->get('driver_auth_table');
+	// 		print json_encode(array('status'=>'error','error'=>'504','message'=>'Something Went wrong'));
 
-                  $rs = $query->row();
+	// 	}
 
-                  $driv_id = $rs->driver_id;
+	// }
 
-                  $average_rating = $this->Webservices_driver_model->avg_rating($driv_id);
 
-                  //print_r($average_rating);
 
-                  if ($average_rating == '') {
 
-                      $avg = '0';
 
-                  } else {
+	public function trip_start(){
 
-                      $avg = $average_rating;
+		
 
-                  }
+		header('Content-type: application/json');
 
-                  $result->average_rating = $avg;
+		if(isset(apache_request_headers()['Auth'])) {
 
-                  $tot_requests = $this->Webservices_driver_model->num_rides($driv_id);
+            $auth = apache_request_headers()['Auth'];		
 
-                  //print_r($tot_requests);
+			$postdata = file_get_contents("php://input");
 
-                  $result->total_requests = $tot_requests;
+			$request = json_decode($postdata,true);
 
-                  $req_accepted = $this->Webservices_driver_model->num_requests($driv_id);
+			$request['auth'] = $auth;
 
-                  $result->requests_accepted = $req_accepted;
 
-                  $tot_trips = $this->Webservices_driver_model->num_trips($driv_id);
 
-                  $result->total_trips = $tot_trips;
+			if(isset($request['trip_id'])){
 
-                  $trips_cancelled = $this->Webservices_driver_model->num_cancelled($driv_id);
+			$result = $this->Webservices_driver_model->start_trip($request);
 
-                  //print_r($trips_cancelled);
+			header('Content-type: application/json');
 
-                  $result->trips_cancelled = $trips_cancelled;
+			if($result){
 
-                  //$test = json_encode(array('status' => 'success','data' =>$result));
+				print json_encode(array('status'=>'success'));
 
+			} else {
 
-                  //$con = str_replace("\"", "", $test);
+				print json_encode(array('status' => 'error','code'=>'209','message'=>'Something Went wrong'));
 
-                  //print $con;
+			}
 
+		}else{
 
-                  print json_encode(array('status' => 'success', 'data' => $result), JSON_NUMERIC_CHECK);
+			print json_encode(array('status' => 'error','code'=>'209','message'=>'Something Went wrong'));
 
-              } else {
 
-                  print json_encode(array('status' => 'error', 'code' => '209', 'message' => 'Something Went wrong'));
 
-              }
+		}
 
-              //'a534457488937db4b21d0a043eb6581a'
+            //'a534457488937db4b21d0a043eb6581a'
 
-          } else {
+		} else {
 
-              print json_encode(array('status' => 'error', 'code' => '209', 'message' => 'Something Went wrong'));
+			print json_encode(array('status' => 'error','code'=>'209','message'=>'Something Went wrong'));
 
-          }
+		}
 
-      }
+		
 
-      public function trip_details($trip_id = null) {
+	}
 
-          header('Content-type: application/json');
 
-          if (isset(apache_request_headers()['Auth'])) {
 
-              $request = $_GET;
 
-              if (isset($request['trip_id'])) {
 
-                  $result = $this->Webservices_driver_model->tripdetails($request);
 
-                  header('Content-type: application/json');
 
-                  if (count($result) > 0) {
 
-                      //print_r($result);
 
-                      $rate = $this->Webservices_driver_model->driver_rate($request['trip_id']);
 
-                      $result->rating = $rate;
 
-                      print json_encode(array('status' => 'success', 'data' => $result));
 
-                  } else {
 
-                      print json_encode(array('status' => 'error', 'code' => '209', 'message' => 'Something Went wrong'));
+	public function help(){
 
-                  }
+		
 
-              } else {
+		header('Content-type: application/json');
 
-                  print json_encode(array('status' => 'error', 'code' => '209', 'message' => 'Something Went wrong'));
+		if(isset(apache_request_headers()['Auth'])) {
 
-              }
+            $auth = apache_request_headers()['Auth'];		
 
-          } else {
+			$postdata = file_get_contents("php://input");
 
-              print json_encode(array('status' => 'error', 'code' => '209', 'message' => 'Something Went wrong'));
+			$request = $_GET;
 
-          }
+			$request['auth'] = $auth;
 
-      }
 
-      public function trip_history() {
 
-          header('Content-type: application/json');
 
-          if (isset(apache_request_headers()['Auth'])) {
 
-              $auth = apache_request_headers()['Auth'];
+			$result = $this->Webservices_driver_model->help_pages($request);
 
-              $request['auth'] = $auth;
+			header('Content-type: application/json');
 
-              $page = isset($_GET['page']) ? $_GET['page'] : 1;
+			if(isset($request['id'])){
 
-              if ($page == 0) {
 
-                  $page = 1;
 
-              }
+			if($result){
 
-              //echo "string";
 
 
-              $result = $this->Webservices_driver_model->history_trips($request);
+				$query = $this->db->where('unique_id',$request['auth'])->get('driver_auth_table');
 
-              if ($result) {
+				 $rs = $query->row();
 
-                  $tmp = $this->db->query($result)->result();
 
-                  $total = $this->db->query($result)->num_rows();
 
-                  $per_page = 5;
+          		 $driv_id = $rs->driver_id;
 
-                  $total_pages = ceil($total / $per_page);
 
-                  $current_page = $page;
 
-                  $query = $this->db->where('unique_id', $auth)->get('driver_auth_table');
 
-                  $rs = $query->row();
 
-                  $driv_id = $rs->driver_id;
+				$is_help = $this->Webservices_driver_model->is_help_status($driv_id,$result['id']);
 
-                  $tot_onlinetime = $this->Webservices_driver_model->total_online_time($driv_id);
+				$rs->is_helpful = $is_help;
 
-                  $rs->total_online_time = $tot_onlinetime;
 
-                  //print_r($total);
 
 
-                  if ($total > 0) {
 
-                      $limit = ($per_page * ($current_page - 1));
 
-                      $limit_sql = " ORDER BY booking.id DESC LIMIT $limit,$per_page";
 
-                      //  echo $result.$limit_sql;
+				print json_encode(array('status' => 'success','data' => array('id'=>$result['id'],'title'=>$result['title'],'icon'=>$result['icon'],'content'=>$result['content'],'is_helpful'=>$is_help)));
 
+			} else {
 
-                      $result = $this->db->query($result.$limit_sql)->result();
+				print json_encode(array('status' => 'error','code'=>'209','message'=>'Something Went wrong'));
 
-                      $query = $this->db->where('unique_id', $auth)->get('driver_auth_table');
+			}
 
-                      $rs = $query->row();
+		}else{
 
-                      $driv_id = $rs->driver_id;
+			print json_encode(array('status' => 'error','code'=>'209','message'=>'Something Went wrong'));
 
-                      $fare = $this->Webservices_driver_model->total_fare($driv_id);
+		}
 
-                      $rs->total_fare = $fare;
+            //'a534457488937db4b21d0a043eb6581a'
 
-                      $tot_ride = $this->Webservices_driver_model->total_rides_history($driv_id);
+		} else {
 
-                      $rs->total_rides_taken = $tot_ride;
+			print json_encode(array('status' => 'error','code'=>'209','message'=>'Something Went wrong'));
 
-                      print json_encode(array('status' => 'success', 'data' => array('total_fare' => $fare, 'total_rides_taken' => $tot_ride, 'total_online_time' => $tot_onlinetime, 'trips' => $result), 'meta' => array('total' => $total, 'per_page' => $per_page, 'total_pages' => $total_pages, 'current_page' => $current_page)));
+		}
 
-                  } else {
+		
 
-                      print json_encode(array('status' => 'success', 'data' => array('total_fare' => 0, 'total_rides_taken' => 0, 'total_online_time' => $tot_onlinetime, 'trips' => []), 'meta' => array('total' => $total, 'per_page' => $per_page, 'total_pages' => $total_pages, 'current_page' => $current_page)));
+	}
 
-                  }
 
-              } else {
 
-                  print json_encode(array('status' => 'error', 'message' => 'Something Went wrong', 'error' => '503'));
 
-              }
 
-          } else {
 
-              print json_encode(array('status' => 'error', 'message' => 'Something Went wrong', 'error' => '503'));
 
-          }
+	public function help_page_list(){
 
-      }
+		
 
-      public function trip_list_for_today() {
+		header('Content-type: application/json');
 
-          header('Content-type: application/json');
+		if(isset(apache_request_headers()['Auth'])) {
 
-          if (isset(apache_request_headers()['Auth'])) {
+            $auth = apache_request_headers()['Auth'];		
 
-              $auth = apache_request_headers()['Auth'];
+			$postdata = file_get_contents("php://input");
 
-              $request['auth'] = $auth;
+			//$request = $_GET;
 
-              $page = isset($_GET['page']) ? $_GET['page'] : 1;
+			$request['auth'] = $auth;
 
-              if ($page == 0) {
 
-                  $page = 1;
 
-              }
 
-              // $start_time = strtotime(date('Y-m-d 00:00:00'));
 
-              // $end_time = strtotime(date('Y-m-d 23:59:59'));
+			$result = $this->Webservices_driver_model->help_list($request);
 
+			header('Content-type: application/json');
 
-              $start_time = strtotime(date('Y-m-d 00:00:00'));
+			if($result){
 
-              $end_time = strtotime(date('Y-m-d 23:59:59'));
+				print json_encode(array('status' => 'success','data' => array('help'=>$result)));
 
-              $result = $this->Webservices_driver_model->today_trips($request, $start_time, $end_time);
+			} else {
 
-              if ($result) {
+				print json_encode(array('status' => 'error','code'=>'209','message'=>'Something Went wrong'));
 
-                  //	print_r($result);
+			}
 
-                  $total = $this->db->query($result)->num_rows();
+            //'a534457488937db4b21d0a043eb6581a'
 
-                  $per_page = 2;
+		} else {
 
-                  $total_pages = ceil($total / $per_page);
+			print json_encode(array('status' => 'error','code'=>'209','message'=>'Something Went wrong'));
 
-                  $current_page = $page;
+		}
 
-                  if ($total > 0) {
+		
 
-                      $limit = ($per_page * ($current_page - 1));
+	}
 
-                      $limit_sql = " LIMIT $limit,$per_page";
 
-                      $result = $this->db->query($result.$limit_sql)->result();
 
-                      $id = $result->driver_id;
 
-                      $start_time = strtotime(date('Y-m-d 00:00:00'));
 
-                      $end_time = strtotime(date('Y-m-d 23:59:59'));
 
-                      $id = $result->driver_id;
 
-                      $query = $this->db->where('unique_id', $auth)->get('driver_auth_table');
+	public function help_page_review(){
 
-                      $rs = $query->row();
+		
 
-                      $driv_id = $rs->driver_id;
+		header('Content-type: application/json');
 
-                      $fare = $this->Webservices_driver_model->totalfare_today($start_time, $end_time, $driv_id);
+		if(isset(apache_request_headers()['Auth'])) {
 
-                      $rs->total_fare = $fare;
+            $auth = apache_request_headers()['Auth'];		
 
-                      $rides = $this->Webservices_driver_model->total_rides($start_time, $end_time, $driv_id);
+			$postdata = file_get_contents("php://input");
 
-                      $rs->total_rides_taken = $rides;
 
-                      $tot_onlinetime = $this->Webservices_driver_model->total_online_time($driv_id);
 
-                      $rs->total_online_time = $tot_onlinetime;
+			$request = json_decode($postdata,true);
 
-                      //print_r($result);
+			$request['auth'] = $auth;
 
-                      print json_encode(array('status' => 'success', 'data' => array('total_fare' => $fare, 'total_online_time' => $tot_onlinetime, 'total_rides_taken' => $rides, 'trips' => $result), 'meta' => array('total' => $total, 'per_page' => $per_page, 'total_pages' => $total_pages, 'current_page' => $current_page)));
 
-                  } else {
 
-                      print json_encode(array('status' => 'success', 'data' => array('total_fare' => 0, 'total_rides_taken' => 0, 'total_online_time' => 0, 'trips' => []), 'meta' => array('total' => $total, 'per_page' => $per_page, 'total_pages' => $total_pages, 'current_page' => $current_page)));
+			$result = $this->Webservices_driver_model->help_review($request);
 
-                  }
+			header('Content-type: application/json');
 
-              } else {
+			if($result){
 
-                  print json_encode(array('status' => 'error', 'message' => 'Something Went wrong', 'error' => '503'));
+				print json_encode(array('status' => 'success'));
 
-              }
+			} else {
 
-          } else {
+				print json_encode(array('status' => 'error','code'=>'208','message'=>'Something Went wrong'));
 
-              print json_encode(array('status' => 'error', 'message' => 'Something Went wrong', 'error' => '503'));
+			}
 
-          }
+		} else {
 
-      }
+			print json_encode(array('status' => 'error','code'=>'208','message'=>'Something Went wrong'));
 
-      function fcm_usermessage($request) {
+		}
 
-          /*$postdata = file_get_contents("php://input");
+		
 
-          $request = json_decode($postdata,true);*/
+	}
 
-          $this->Webservices_driver_model->message($request);
 
-          /*
 
-          if($result){
 
-          print json_encode(array('status'=>'success','data'=>array('id'=>$result['trip_id'])));
 
 
 
-          }else{
+	public function update_vehicle_details(){
 
-          print json_encode(array('status'=>'error','message'=>'Something Went wrong','error'=>'605'));
+		
 
-          }
+		header('Content-type: application/json');
 
-           */
+		if(isset(apache_request_headers()['Auth'])) {
 
-      }
+            $auth = apache_request_headers()['Auth'];		
 
-      public function updatedriver_status() {
+			$postdata = file_get_contents("php://input");
 
-          header('Content-type: application/json');
 
-          if (isset(apache_request_headers()['Auth'])) {
 
-              $auth = apache_request_headers()['Auth'];
+			$request = json_decode($postdata,true);
 
-              $postdata = file_get_contents("php://input");
+			$request['auth'] = $auth;
 
-              $request = json_decode($postdata, true);
 
-              $request['auth'] = $auth;
 
-              if (isset($request['driver_status'])) {
+			$result = $this->Webservices_driver_model->update_vehicle($request);
 
-                  $result = $this->Webservices_driver_model->driver_onstatus($request);
+			header('Content-type: application/json');
 
-                  header('Content-type: application/json');
+			if($result){
 
-                  if ($result) {
+				print json_encode(array('status' => 'success'));
 
-                      return 0;
+			} else {
 
-                      //print json_encode(array('status' => 'success'));
+				print json_encode(array('status' => 'error','code'=>'210','message'=>'Something Went wrong'));
 
-                  } else {
+			}
 
-                      print json_encode(array('status' => 'error', 'code' => '208', 'message' => 'Something Went wrong'));
+		} else {
 
-                  }
+			print json_encode(array('status' => 'error','code'=>'210','message'=>'Something Went wrong'));
 
-              } else {
+		}
 
-                  print json_encode(array('status' => 'error', 'code' => '208', 'message' => 'Something Went wrong'));
+		
 
-              }
+	}
 
-          } else {
 
-              print json_encode(array('status' => 'error', 'code' => '208', 'message' => 'Something Went wrong'));
 
-          }
 
-      }
 
-      public function trip_end() {
+	public function update_accesibility_settings(){
 
-          header('Content-type: application/json');
+		
 
-          if (isset(apache_request_headers()['Auth'])) {
+		header('Content-type: application/json');
 
-              $auth = apache_request_headers()['Auth'];
+		if(isset(apache_request_headers()['Auth'])) {
 
-              $postdata = file_get_contents("php://input");
+            $auth = apache_request_headers()['Auth'];		
 
-              $request = json_decode($postdata, true);
+			$postdata = file_get_contents("php://input");
 
-              $request['auth'] = $auth;
 
-              //$result = '[{"longitude":"-73.9976592","latitude":"40.6905615"},{"longitude":"-73.9976592","latitude":"40.6905615"},{"longitude":"-73.9976592","latitude":"40.6905615"},{"longitude":"-73.9976592","latitude":"40.6905615"},{"longitude":"-73.9976592","latitude":"40.6905615"},{"longitude":"-73.9976592","latitude":"40.6905615"},{"longitude":"-73.933783","latitude":"40.659569"},{"longitude":"-73.851524","latitude":"40.729029"},{"longitude":"-73.6334271","latitude":"40.6860072"},{"longitude":"-73.7527626","latitude":"40.598566"},{"longitude":"-73.933783","latitude":"40.659569"},{"longitude":"-73.851524","latitude":"40.729029"},{"longitude":"-73.6334271","latitude":"40.6860072"},{"longitude":"-73.7527626","latitude":"40.598566"}]';
 
+			$request = json_decode($postdata,true);
 
-              $result = $request['path'];
+			$request['auth'] = $auth;
 
-              //$result = json_decode($result);
-              $trip_path = json_encode($result);
 
-              $array = array();
 
-              foreach($result as $rs) {
+			$result = $this->Webservices_driver_model->update_settings($request);
 
-                  $latlng = $rs['latitude'].','.$rs['longitude'];
+			header('Content-type: application/json');
 
-                  $array[] = $latlng;
+			if($result){
 
-              }
+				print json_encode(array('status' => 'success'));
 
-              //print_r($array);
+			} else {
 
+				print json_encode(array('status' => 'error','code'=>'208','message'=>'Something Went wrong'));
 
-              $count = count($array);
+			}
 
-              $i = 0;
+		} else {
 
-              $distance_val = 0;
-              while ($i < $count - 1) {
+			print json_encode(array('status' => 'error','code'=>'208','message'=>'Something Went wrong'));
 
-                  list($lat1, $lon1) = explode(',', $array[$i]);
+		}
 
-                  list($lat2, $lon2) = explode(',', $array[$i + 1]);
+		
 
-                  $unit = 'K';
+	}
 
-                  $distance_val += $this->distance_calculate($lat1, $lon1, $lat2, $lon2, $unit);
 
-                  $i++;
 
-              }
 
-              //print_r($distance_val);
 
 
-              $rs = $distance_val;
-              $trip_end_time = time();
-              $this->db->where('id', $request['trip_id'])->update('booking', array('trip_end_time' => $trip_end_time, 'trip_path' => $trip_path));
-              $res = $this->db->where('id', $request['trip_id'])->get('booking')->row();
 
-              $trip_start_time = $res->trip_start_time;
+	public function fetch_accesibility_settings(){
 
-              $trip_end_time = $res->trip_end_time;
+		
 
-              $distance = ($rs);
+		header('Content-type: application/json');
 
-              $time = (($trip_end_time - $trip_start_time) / 60);
+		if(isset(apache_request_headers()['Auth'])) {
 
-              $total_time = $time;
+            $auth = apache_request_headers()['Auth'];	
 
-              $hours = floor($time / 60);
+            $request = $_GET;
 
-              $minutes = ($time % 60);
 
-              $time = $hours.':'.$minutes;
 
-              $minutes_travel = intval($total_time);
 
-              if ($minutes_travel == '0') {
-                  $hours = '0 : 01';
-              } else {
-                  $hours = convertToHoursMins($minutes_travel, '%2d : %02d ');
-              }
-              //    print_r($minutes_travel);die;
 
+			$request['auth'] = $auth;
 
-              $array = array('distance' => $distance,
 
-                      'start_time' => $request['start_time'],
 
-                      'end_time' => $request['end_time'],
+			$result = $this->Webservices_driver_model->fetch_settings($request);
 
-                      'time' => $hours,
+			header('Content-type: application/json');
 
-                      //'trip_path' => $request['path'],
+			if($result){
 
-                      //    'book_status' => 0,
+				print json_encode(array('status' => 'success','data'=>array('is_deaf'=>filter_var ($result['is_deaf'], FILTER_VALIDATE_BOOLEAN),'is_flash_required_for_requests'=>filter_var ($result['is_flash_required_for_requests'], FILTER_VALIDATE_BOOLEAN))));
 
-                      'status' => 3);
+			} else {
 
-              $this->db->where('id', $request['trip_id'])->update('booking', $array);
+				print json_encode(array('status' => 'error','code'=>'209','message'=>'Something Went wrong'));
 
-              // echo $this->db->last_query();die;
+			}
 
-              $data = $this->db->select('car_type,id,distance,time,source_lat AS source_latitude,source_lng AS source_longitude,
+		} else {
 
-                      destination_lat AS destination_latitude,destination_lng AS destination_longitude')->where('id', $request['trip_id'])->get('booking')->row_array();
+			print json_encode(array('status' => 'error','code'=>'209','message'=>'Something Went wrong'));
 
-              $trip_id = $request['trip_id'];
+		}
 
-              $data['time'] = $total_time;
+		
 
-              $fare = $this->Webservices_driver_model->fare_calculate($data, $trip_id);
+	}
 
-              $result = $this->Webservices_driver_model->get_trip_info($request['trip_id']);
 
-              $this->Webservices_driver_model->message($request['trip_id']);
 
-              if ($result) {
 
-                  print json_encode(array('status' => 'success', 'data' => $result));
 
-              } else {
 
-                  print json_encode(array('status' => 'error', 'error' => '211', 'message' => 'Invalid booking details'));
 
-              }
+	public function update_driver_location(){
 
-          } else {
+		
 
-              print json_encode(array('status' => 'error', 'error' => '210', 'message' => 'Something Went wrong'));
+		header('Content-type: application/json');
 
-          }
+		if(isset(apache_request_headers()['Auth'])) {
 
-      }
+            $auth = apache_request_headers()['Auth'];		
 
-      public function distance($origins, $destination) {
+			$postdata = file_get_contents("php://input");
 
-          $data1 = "SELECT * FROM settings WHERE id = '1' ";
 
-          $query1 = $this->db->query($data1);
 
-          $rs = $query1->row();
-          $key = $rs->key;
+			$request = json_decode($postdata,true);
 
-          $url = "https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins=$origins&destinations=$destination&mode=driving&key=$key";
+			$request['auth'] = $auth;
 
-          //$url = "https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins=40.6655101,-73.89188969999998&destinations=40.6905615,-73.9976592&40.6905615,-73.9976592&40.6905615,-73.9976592&40.6905615,-73.9976592&40.6905615,-73.9976592&40.6905615,-73.9976592&40.659569,-73.933783&40.729029,-73.851524&40.6860072,-73.6334271&40.598566,-73.7527626&40.659569,-73.933783&40.729029,-73.851524&40.6860072,-73.6334271&40.598566,-73.7527626&key=AIzaSyB1br9lwKFyEpCnS5elLan_90CCsYeak6I";
 
-          $ch = curl_init();
 
-          curl_setopt($ch, CURLOPT_URL, $url);
+			$result = $this->Webservices_driver_model->driver_location($request);
 
-          curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+			header('Content-type: application/json');
 
-          curl_setopt($ch, CURLOPT_PROXYPORT, 3128);
+			if($result){
 
-          curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+				print json_encode(array('status' => 'success'));
 
-          curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+			} else {
 
-          $response = curl_exec($ch);
+				print json_encode(array('status' => 'error','code'=>'209','message'=>'Something Went wrong'));
 
-          curl_close($ch);
+			}
 
-          $response_a = json_decode($response, true);
+		} else {
 
-          return $dist = $response_a['rows'][0]['elements'][0]['distance']['value'];
+			print json_encode(array('status' => 'error','code'=>'209','message'=>'Something Went wrong'));
 
-          //print_r($response_a);
+		}
 
-      }
+		
 
-      function distance_calculate($lat1, $lon1, $lat2, $lon2, $unit) {
+	}
 
-          $theta = $lon1 - $lon2;
 
-          $dist = sin(deg2rad($lat1)) * sin(deg2rad($lat2)) + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * cos(deg2rad($theta));
 
-          $dist = acos($dist);
+	public function request_details($request_id=null){
 
-          $dist = rad2deg($dist);
 
-          $miles = $dist * 60 * 1.1515;
 
-          $unit = strtoupper($unit);
+		header('Content-type: application/json');
 
-          return ($miles * 1.609344);
+		if(isset(apache_request_headers()['Auth'])){
 
-      }
+			$auth = apache_request_headers()['Auth'];
 
-      public function send_email() {
-          $data = '{"name":"Adarsh","email":"adarsh.techware@gmail.com","message" :"Hi Team"}';
+			$request = $_GET;
 
-          $data = json_decode($data);
+			$request['auth'] = $auth;
 
-          $this->load->library('email');
-          $config = Array(
-                  'protocol' => 'smtp',
-                  'smtp_host' => 'mail.techlabz.in',
-                  'smtp_port' => 587,
-                  'smtp_user' => 'no-reply@techlabz.in', // change it to yours
-                  'smtp_pass' => 'k4$_a4%eD?Hi', // change it to yours
-                  'smtp_timeout' => 20,
-                  'mailtype' => 'html',
-                  'charset' => 'iso-8859-1',
-                  'wordwrap' => TRUE);
 
-          $this->email->initialize($config); // add this line
 
-          $subject = 'New Mail';
-          $name = $data->name;
-          $mailTemplate = $data->message;
+			if(isset($request['request_id'])){
 
-          //$this->email->set_newline("\r\n");
-          $this->email->from('no-reply@techlabz.in', $name);
-          $this->email->to($data->email);
-          $this->email->subject($subject);
-          $this->email->message($mailTemplate);
-          echo $this->email->send();
-          $rs = $this->email->print_debugger();
-      }
+				$result = $this->Webservices_driver_model->req_details($request);
 
-      public function forgot_password() {
+				header('Content-type: application/json');
 
-          header('Content-type: application/json');
+				if(count($result)>0){
 
-          $data = json_decode(file_get_contents("php://input"));
+				
 
-          $res = $this->Webservices_driver_model->forgetpassword($data);
+					$result->request_id = $request['request_id'];
 
-          if ($res) {
 
-              echo json_encode(array('status' => 'success'));
 
-          } else {
+					$car_image = $this->Webservices_driver_model->car_type_image($result->car_type);
 
-              echo json_encode(array('status' => 'error', 'message' => 'Sorry. Please Enter Your Correct Email.'));
+					$result->car_type_image = $car_image;
 
-          }
 
-      }
 
-      public function weekly_earnings() {
+					$car_type = $this->Webservices_driver_model->car_type($result->car_type);
 
-          header('Content-type: application/json');
+					$result->car_type = $car_type;
 
-          if (isset(apache_request_headers()['Auth'])) {
 
-              $auth = apache_request_headers()['Auth'];
 
-              $postdata = file_get_contents("php://input");
+				// 	$is_help = $this->Webservices_driver_model->is_help_status($driv_id,$result['id']);
 
-              $request = json_decode($postdata, true);
+				// $rs->is_helpful = $is_help;
 
-              $query = $this->db->where('unique_id', $auth)->get('driver_auth_table');
 
-              $rs = $query->row();
 
-              $driv_id = $rs->driver_id;
 
-              //print_r($driv_id);
 
-              $request = $_GET;
+					print json_encode(array('status' =>'success' ,'data'=>$result));
 
-              // print_r($request);
 
-              if (!isset($request['week_of_year'])) {
 
-                  $week_of_year = date('W') - 1;
+				} else {
 
-              } else {
+					print json_encode(array('status' =>'error'));
 
-                  $week_of_year = $request['week_of_year'] - 1;
+				}
 
-              }
+			} else {
 
-              if (!isset($request['year'])) {
+				print json_encode(array('status' =>'error','error'=>'209','message'=>'Something Went wrong'));
 
-                  $year = date('Y');
+			}
 
-              } else {
+	}else{
 
-                  $year = $request['year'];
+		print json_encode(array('status' =>'error','error'=>'209','message'=>'Something Went wrong'));
 
-              }
+	}
 
-              $week_days = $this->getStartAndEndDate($week_of_year, $year);
+			
 
-              $array = $week_days;
+		}
 
-              $result = $this->Webservices_driver_model->get_payout($array, $driv_id);
 
-              $result['week_of_the_year'] = $week_of_year + 1;
 
-              $result['year'] = $year;
 
-              //        $result = array();
 
 
-              //       $fare = $this->Webservices_driver_model->get_payout($array,$driv_id);
 
-              // $result['total_payout'] = $fare;
+		public function trip_summary($id=null){
 
+			
 
-              if ($result) {
+		header('Content-type: application/json');
 
-                  print json_encode(array('status' => 'success', 'data' => $result));
+			if(isset(apache_request_headers()['Auth'])){
 
-              } else {
 
-                  print json_encode(array('status' => 'error', 'error' => '211', 'message' => 'Something Went wrong'));
 
-              }
+			$request = $_GET;		
 
-          } else {
+			if(isset($request['trip_id'])){
 
-              print json_encode(array('status' => 'error', 'message' => 'Something Went wrong', 'error' => '605'));
 
-          }
 
-      }
+				$result = $this->Webservices_driver_model->summary_trip($request);
 
-      function getStartAndEndDate($week, $year) {
+				header('Content-type: application/json');
 
-          $time = strtotime("1 January $year", time());
+				if(count($result)>0){
 
-          $day = date('w', $time);
+					// print_r($result);
 
-          $time += ((7 * $week) - $day) * 24 * 3600;
+					// $pattern = $result['pattern_id'];
 
-          $return[0] = date('Y-m-d', $time);
+					// print_r($pattern);
 
-          $j = 1;
 
-          for ($i = 1; $i < 7; $i++) {
 
-              $time += $j * 24 * 3600;
+					print json_encode(array('status' =>'success' ,'data'=>$result));
 
-              $return[$i] = date('Y-m-d', $time);
 
-          }
 
-          return $return;
+				} else {
 
-      }
+				print json_encode(array('status' => 'error','code'=>'209','message'=>'Something Went wrong'));
 
-      function get_cal($array) {
-          //$array = array(10,12,15,18,24,30,42);
-          $count = count($array);
-          $i = 0;
-          $distance = 0;
-          while ($i < $count - 1) {
-              $distance += $array[$i + 1] - $array[$i];
-              $i++;
-          }
-          return $distance;
-      }
-  }
+
+
+				}
+
+			} else {
+
+					print json_encode(array('status' => 'error','code'=>'209','message'=>'Something Went wrong'));
+
+
+
+			}	
+
+			}else{
+
+					print json_encode(array('status' => 'error','code'=>'209','message'=>'Something Went wrong'));
+
+	}
+
+			
+
+		}
+
+
+
+
+
+
+
+
+
+
+
+
+
+		public function app_status(){
+
+			
+
+		header('Content-type: application/json');
+
+	if(isset(apache_request_headers()['Auth'])){
+
+		$auth = apache_request_headers()['Auth'];
+
+		$request['auth'] = $auth;
+
+		$result = $this->Webservices_driver_model->statusof_app($request);
+
+		header('Content-type: application/json');
+
+		if($result){
+
+			$result->app_status = '1';
+
+			//print_r($result->trip_id);
+
+			$drvr_status = $this->Webservices_driver_model->status_driver($result->trip_id);
+
+			$result->driver_status = $drvr_status;
+
+
+
+
+
+
+
+			print json_encode(array('status'=>'success', 'data' => $result));
+
+		}else{
+
+			print json_encode(array('status' => 'success','data'=>array('app_status'=>'0')));
+
+		}
+
+	}else{
+
+		print json_encode(array('status' => 'error','code'=>'209','message'=>'Something Went wrong'));
+
+	}
+
+}
+
+
+
+
+
+
+
+	public function confirm_car_arrival(){
+
+		
+
+		header('Content-type: application/json');
+
+		if(isset(apache_request_headers()['Auth'])) {
+
+            $auth = apache_request_headers()['Auth'];		
+
+			$postdata = file_get_contents("php://input");
+
+
+
+			$request = json_decode($postdata,true);
+
+			$request['auth'] = $auth;
+
+			if(isset($request['trip_id'])){
+
+			$result = $this->Webservices_driver_model->confirm_arrival($request);
+
+			header('Content-type: application/json');
+
+			if($result){
+
+				print json_encode(array('status' => 'success'));
+
+			} else {
+
+				print json_encode(array('status' => 'error','code'=>'208','message'=>'Something Went wrong'));
+
+			}
+
+		}else{
+
+				print json_encode(array('status' => 'error','code'=>'208','message'=>'Something Went wrong'));
+
+
+
+		}
+
+		} else {
+
+			print json_encode(array('status' => 'error','code'=>'208','message'=>'Something Went wrong'));
+
+		}
+
+		
+
+	}
+
+
+
+
+
+
+
+	public function confirm_cash_collection(){
+
+		
+
+		header('Content-type: application/json');
+
+		if(isset(apache_request_headers()['Auth'])) {
+
+            $auth = apache_request_headers()['Auth'];		
+
+			$postdata = file_get_contents("php://input");
+
+
+
+			$request = json_decode($postdata,true);
+
+			$request['auth'] = $auth;
+
+			if(isset($request['trip_id'])){
+
+			$result = $this->Webservices_driver_model->confirm_cash($request);
+
+			header('Content-type: application/json');
+
+			if($result){
+
+				print json_encode(array('status' => 'success'));
+
+			} else {
+
+				print json_encode(array('status' => 'error','code'=>'208','message'=>'Something Went wrong'));
+
+			}
+
+		}else{
+
+			print json_encode(array('status' => 'error','code'=>'208','message'=>'Something Went wrong'));
+
+		}
+
+		} else {
+
+			print json_encode(array('status' => 'error','code'=>'208','message'=>'Something Went wrong'));
+
+		}
+
+		
+
+	}
+
+
+
+
+
+
+
+	public function rider_feedback_issues(){
+
+
+
+		header('Content-type: application/json');
+
+		if(isset(apache_request_headers()['Auth'])) {
+
+            $auth = apache_request_headers()['Auth'];			
+
+			$request['auth'] = $auth;
+
+			$page = $_GET['page']>=1?$_GET['page']:1;
+
+			
+
+
+
+			$result = $this->Webservices_driver_model->ride_feedback($request);
+
+			header('Content-type: application/json');
+
+			if($result){
+
+
+
+
+
+				$total = count((array)$result);
+
+				$per_page = 20;
+
+				$total_pages = floor($total/$per_page);
+
+				$current_page = $page;
+
+
+
+
+
+				print json_encode(array('status' => 'success','data'=>array('issues'=>$result),'meta'=>array('total'=>$total,'per_page'=>$per_page,'total_pages'=>$total_pages,'current_page'=>$current_page)));
+
+			} else {
+
+				print json_encode(array('status' => 'success','data'=>[]));
+
+			}
+
+		} else {
+
+			print json_encode(array('status' => 'error','message'=>'Something Went wrong','error'=>'503'));
+
+		}
+
+		
+
+	}
+
+
+
+
+
+
+
+	public function rider_feedback_comments(){
+
+
+
+		header('Content-type: application/json');
+
+		if(isset(apache_request_headers()['Auth'])) {
+
+            $auth = apache_request_headers()['Auth'];			
+
+			$request['auth'] = $auth;
+
+			$page = $_GET['page']>=1?$_GET['page']:1;
+
+			
+
+
+
+
+
+			$result = $this->Webservices_driver_model->feedback_comments($request);
+
+			header('Content-type: application/json');
+
+			if($result){
+
+				//print_r($result);
+
+				//$start_time =$result['trip_id'];
+
+				//print_r($start_time);
+
+
+
+
+
+			
+
+
+
+				$total = count((array)$result);
+
+				$per_page = 20;
+
+				$total_pages = floor($total/$per_page);
+
+				$current_page = $page;
+
+
+
+
+
+				print json_encode(array('status' => 'success','data'=>array('comments'=>$result),'meta'=>array('total'=>$total,'per_page'=>$per_page,'total_pages'=>$total_pages,'current_page'=>$current_page)));
+
+			} else {
+
+				print json_encode(array('status' => 'success','data'=>[]));
+
+			}
+
+		} else {
+
+			print json_encode(array('status' => 'error','message'=>'Something Went wrong','error'=>'503'));
+
+		}
+
+		
+
+	}
+
+
+
+
+
+
+
+	public function rating_details(){
+
+		
+
+		header('Content-type: application/json');
+
+		if(isset(apache_request_headers()['Auth'])) {
+
+            $auth = apache_request_headers()['Auth'];		
+
+			//$postdata = file_get_contents("php://input");
+
+			$request = $_GET;
+
+			$request['auth'] = $auth;
+
+
+
+
+
+			$result = $this->Webservices_driver_model->rating($request);
+
+			header('Content-type: application/json');
+
+			if($result){
+
+
+
+				//$str =(int)$result->average_rating;
+
+				//$str = preg_replace('/"([^"]+)"\s*:\s*/', '$1:', $str);
+
+				//print_r($str);
+
+            	//echo trim($str, '"');
+
+				$query = $this->db->where('unique_id',$request['auth'])->get('driver_auth_table');
+
+				$rs = $query->row();
+
+            	$driv_id = $rs->driver_id;
+
+
+
+				$average_rating = $this->Webservices_driver_model->avg_rating($driv_id);
+
+				//print_r($average_rating);
+
+				if($average_rating == ''){
+
+					$avg = '0';
+
+				}else{
+
+					$avg = $average_rating;
+
+				}	
+
+				$result->average_rating = $avg;
+
+
+
+
+
+				$tot_requests = $this->Webservices_driver_model->num_rides($driv_id);
+
+				//print_r($tot_requests);
+
+				$result->total_requests = $tot_requests;
+
+
+
+				$req_accepted = $this->Webservices_driver_model->num_requests($driv_id);
+
+				$result->requests_accepted = $req_accepted;
+
+
+
+				$tot_trips = $this->Webservices_driver_model->num_trips($driv_id);
+
+				$result->total_trips = $tot_trips;
+
+
+
+				$trips_cancelled = $this->Webservices_driver_model->num_cancelled($driv_id);
+
+				//print_r($trips_cancelled);
+
+				$result->trips_cancelled = $trips_cancelled;
+
+				
+
+				//$test = json_encode(array('status' => 'success','data' =>$result));
+
+		
+
+				//$con = str_replace("\"", "", $test);
+
+				//print $con;
+
+
+
+				print json_encode(array('status' =>'success','data'=>$result ),JSON_NUMERIC_CHECK);
+
+				
+
+			} else {
+
+				print json_encode(array('status' => 'error','code'=>'209','message'=>'Something Went wrong'));
+
+			}
+
+            //'a534457488937db4b21d0a043eb6581a'
+
+		} else {
+
+			print json_encode(array('status' => 'error','code'=>'209','message'=>'Something Went wrong'));
+
+		}
+
+		
+
+	}
+
+
+
+
+
+	public function trip_details($trip_id=null){
+
+		
+
+		header('Content-type: application/json');
+
+			if(isset(apache_request_headers()['Auth'])){
+
+
+
+		$request = $_GET;
+
+
+
+		if(isset($request['trip_id'])){
+
+			$result = $this->Webservices_driver_model->tripdetails($request);
+
+			header('Content-type: application/json');
+
+			if(count($result)>0){
+
+				//print_r($result);
+
+				$rate = $this->Webservices_driver_model->driver_rate($request['trip_id']);
+
+				$result->rating = $rate;
+
+			
+
+
+
+				print json_encode(array('status' =>'success' ,'data'=>$result));
+
+
+
+			} else {
+
+				print json_encode(array('status' => 'error','code'=>'209','message'=>'Something Went wrong'));
+
+			}
+
+		} else {
+
+			print json_encode(array('status' => 'error','code'=>'209','message'=>'Something Went wrong'));
+
+		}
+
+	}else{
+
+		print json_encode(array('status' => 'error','code'=>'209','message'=>'Something Went wrong'));
+
+	}
+
+
+
+		
+
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	public function trip_history(){
+
+
+
+		header('Content-type: application/json');
+
+		if(isset(apache_request_headers()['Auth'])) {
+
+            $auth = apache_request_headers()['Auth'];			
+
+			$request['auth'] = $auth;
+
+			$page = isset($_GET['page'])?$_GET['page']:1;
+
+
+
+			if($page==0){
+
+				$page = 1;
+
+			}
+
+			//echo "string";
+
+
+
+			$result = $this->Webservices_driver_model->history_trips($request);
+
+			
+
+			//$id = $result->driver_id;
+
+			//print_r($result);
+
+			//die();
+
+			if($result){
+
+				//print_r($result);
+
+
+
+
+
+				//print json_encode(array('status' => 'success','data'=>array('trips'=>$result)));
+
+				$tmp = $this->db->query($result)->result();
+
+				//print_r($tmp);
+
+				$total = $this->db->query($result)->num_rows();
+
+				//echo $this->db->last_query();
+
+				//$total = count((array)$result);
+
+				
+
+
+
+				$per_page = 5;
+
+				$total_pages = ceil($total/$per_page);
+
+				$current_page = $page;
+
+
+
+
+
+				
+
+
+
+
+
+				$query = $this->db->where('unique_id',$auth)->get('driver_auth_table');
+
+            	$rs = $query->row();
+
+            	$driv_id = $rs->driver_id;
+
+
+
+            	$tot_onlinetime = $this->Webservices_driver_model->total_online_time($driv_id);
+
+				$rs->total_online_time = $tot_onlinetime;
+
+				//print_r($total);
+
+
+
+				
+
+
+
+				if($total>0){
+
+
+
+					$limit = ($per_page * ($current_page-1));
+
+
+
+					$limit_sql = " ORDER BY booking.id DESC LIMIT $limit,$per_page";
+
+					//echo $result.$limit_sql; 
+
+
+
+					$result = $this->db->query($result.$limit_sql)->result();
+
+
+
+
+
+
+
+
+
+				// foreach ($result as $rs) {
+
+				// 	//print_r($rs);
+
+				// 	$rate = $this->Webservices_driver_model->trip_rate($rs->id);
+
+				// 	$rs->rating = $rate;
+
+				// 	$new_result[] = $rs;
+
+
+
+
+
+				// $id = $result->driver_id;
+
+				
+
+
+
+
+
+				// }
+
+				$query = $this->db->where('unique_id',$auth)->get('driver_auth_table');
+
+            	$rs = $query->row();
+
+            	$driv_id = $rs->driver_id;
+
+				$fare = $this->Webservices_driver_model->total_fare($driv_id);
+
+				$rs->total_fare = $fare;
+
+					
+
+				$tot_ride = $this->Webservices_driver_model->total_rides_history($driv_id);
+
+				$rs->total_rides_taken = $tot_ride;
+
+
+
+
+
+				
+
+
+
+
+
+
+
+
+
+		print json_encode(array('status' => 'success','data'=>array('total_fare'=>$fare,'total_rides_taken'=>$tot_ride,'total_online_time'=>$tot_onlinetime,'trips'=>$result),'meta'=>array('total'=>$total,'per_page'=>$per_page,'total_pages'=>$total_pages,'current_page'=>$current_page)));
+
+
+
+			} else {
+
+					print json_encode(array('status' => 'success','data'=>array('total_fare'=>0,'total_rides_taken'=>0,'total_online_time'=>$tot_onlinetime,'trips'=>[]),'meta'=>array('total'=>$total,'per_page'=>$per_page,'total_pages'=>$total_pages,'current_page'=>$current_page)));
+
+
+
+			}
+
+		} else {
+
+			print json_encode(array('status' => 'error','message'=>'Something Went wrong','error'=>'503'));
+
+		}
+
+		
+
+	}else{
+
+		print json_encode(array('status' => 'error','message'=>'Something Went wrong','error'=>'503'));
+
+	}
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	public function trip_list_for_today(){
+
+
+
+		header('Content-type: application/json');
+
+		if(isset(apache_request_headers()['Auth'])) {
+
+            $auth = apache_request_headers()['Auth'];			
+
+			$request['auth'] = $auth;
+
+			$page = isset($_GET['page'])?$_GET['page']:1;
+
+
+
+			if($page==0){
+
+				$page = 1;
+
+			}
+
+			
+
+				
+
+				// $start_time = strtotime(date('Y-m-d 00:00:00'));
+
+				// $end_time = strtotime(date('Y-m-d 23:59:59'));
+
+
+
+
+
+				$start_time = strtotime(date('Y-m-d 00:00:00'));
+
+				$end_time = strtotime(date('Y-m-d 23:59:59'));
+
+				//print_r($auth);
+
+					//print_r($start_time);
+
+
+
+					//print_r($end_time);
+
+				// $get_drivid = $this->db->where('unique_id',$auth)->get('driver_auth_table');
+
+				// $rslt = $get_drivid->row();
+
+    //           	 $drv_id = $rslt->driver_id;
+
+              	
+
+
+
+				$result = $this->Webservices_driver_model->today_trips($request,$start_time,$end_time);
+
+				if($result){
+
+				//	print_r($result);
+
+				$total = $this->db->query($result)->num_rows();
+
+				$per_page = 2;
+
+				$total_pages = floor($total/$per_page);
+
+				$current_page = $page;
+
+
+
+
+
+
+
+					// $tot_onlinetime = $this->Webservices_driver_model->total_online_time($drv_id);
+
+					// $rs->total_online_time = $tot_onlinetime;
+
+
+
+				//print_r($total);
+
+				if($total>0){
+
+
+
+					$limit = ($per_page * ($current_page-1));
+
+
+
+					$limit_sql = " LIMIT $limit,$per_page";
+
+
+
+					$result = $this->db->query($result.$limit_sql)->result();
+
+
+
+
+
+
+
+					$id = $result->driver_id;
+
+
+
+					$start_time = strtotime(date('Y-m-d 00:00:00'));
+
+					$end_time = strtotime(date('Y-m-d 23:59:59'));
+
+
+
+					$id = $result->driver_id;
+
+					$query = $this->db->where('unique_id',$auth)->get('driver_auth_table');
+
+            		$rs = $query->row();
+
+            		$driv_id = $rs->driver_id;
+
+					$fare = $this->Webservices_driver_model->totalfare_today($start_time,$end_time,$driv_id);
+
+					$rs->total_fare = $fare;
+
+
+
+					$rides = $this->Webservices_driver_model->total_rides($start_time,$end_time,$driv_id);
+
+					$rs->total_rides_taken = $rides;
+
+
+
+					$tot_onlinetime = $this->Webservices_driver_model->total_online_time($driv_id);
+
+					$rs->total_online_time = $tot_onlinetime;
+
+
+
+//print_r($result);
+
+					print json_encode(array('status' => 'success','data'=>array('total_fare'=>$fare,'total_online_time'=>$tot_onlinetime,'total_rides_taken'=>$rides,'trips'=>$result),'meta'=>array('total'=>$total,'per_page'=>$per_page,'total_pages'=>$total_pages,'current_page'=>$current_page)));
+
+
+
+				} else {
+
+					print json_encode(array('status' => 'success','data'=>array('total_fare'=>0,'total_rides_taken'=>0,'total_online_time'=>0,'trips'=>[]),'meta'=>array('total'=>$total,'per_page'=>$per_page,'total_pages'=>$total_pages,'current_page'=>$current_page)));
+
+				}
+
+			
+
+
+
+		} else {
+
+			print json_encode(array('status' => 'error','message'=>'Something Went wrong','error'=>'503'));
+
+		}
+
+
+
+	}else{
+
+		print json_encode(array('status' => 'error','message'=>'Something Went wrong','error'=>'503'));
+
+	}
+
+}
+
+
+
+
+
+function fcm_usermessage($request){
+
+
+
+    	/*$postdata = file_get_contents("php://input");
+
+		$request = json_decode($postdata,true);*/
+
+
+
+    	$this->Webservices_driver_model->message($request);
+
+
+
+/*
+
+		if($result){
+
+			print json_encode(array('status'=>'success','data'=>array('id'=>$result['trip_id'])));
+
+
+
+		}else{
+
+			print json_encode(array('status'=>'error','message'=>'Something Went wrong','error'=>'605'));
+
+		}
+
+*/
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+public function updatedriver_status(){
+
+	
+
+		header('Content-type: application/json');
+
+		if(isset(apache_request_headers()['Auth'])){
+
+			$auth = apache_request_headers()['Auth'];		
+
+			$postdata = file_get_contents("php://input");
+
+
+
+			$request = json_decode($postdata,true);
+
+			$request['auth'] = $auth;
+
+			if(isset($request['driver_status'])){
+
+				$result = $this->Webservices_driver_model->driver_onstatus($request);
+
+				header('Content-type: application/json');
+
+			if($result){
+
+				return 0;
+
+				//print json_encode(array('status' => 'success'));
+
+			} else {
+
+				print json_encode(array('status' => 'error','code'=>'208','message'=>'Something Went wrong'));
+
+			}
+
+			}else{
+
+				print json_encode(array('status' => 'error','code'=>'208','message'=>'Something Went wrong'));
+
+			}
+
+		}else{
+
+			print json_encode(array('status' => 'error','code'=>'208','message'=>'Something Went wrong'));
+
+		}
+
+	}
+
+
+
+
+
+
+
+
+
+	// public function trip_end(){
+
+	// 	if(isset(apache_request_headers()['Auth'])){
+
+	// 		$auth = apache_request_headers()['Auth'];
+
+	// 		$postdata = file_get_contents("php://input");
+
+	// 		$request = json_decode($postdata,true);
+
+	// 		$request['auth'] = $auth;
+
+
+
+	// 		//$result = '[{"longitude":"-73.9976592","latitude":"40.6905615"},{"longitude":"-73.9976592","latitude":"40.6905615"},{"longitude":"-73.9976592","latitude":"40.6905615"},{"longitude":"-73.9976592","latitude":"40.6905615"},{"longitude":"-73.9976592","latitude":"40.6905615"},{"longitude":"-73.9976592","latitude":"40.6905615"},{"longitude":"-73.933783","latitude":"40.659569"},{"longitude":"-73.851524","latitude":"40.729029"},{"longitude":"-73.6334271","latitude":"40.6860072"},{"longitude":"-73.7527626","latitude":"40.598566"},{"longitude":"-73.933783","latitude":"40.659569"},{"longitude":"-73.851524","latitude":"40.729029"},{"longitude":"-73.6334271","latitude":"40.6860072"},{"longitude":"-73.7527626","latitude":"40.598566"}]';
+
+
+
+	// 		$result = $request['path'];
+
+
+
+	// 		//print_r($result);
+
+
+
+	// 		//$result = json_decode($result);	
+
+
+
+			
+
+
+
+
+
+	// 		$array = array();
+
+	// 		foreach ($result as $rs) {
+
+				
+
+	// 			$latlng = $rs->latitude.','.$rs->longitude;
+
+	// 			//list($new['latitude'],$new['longitude']) = explode(',', $rs);
+
+	// 			$array[] = $latlng;
+
+	// 		}
+
+
+
+	// 		$point = implode('&', $array);
+
+	// 		$origins = '40.6655101,-73.89188969999998';//$array[0];
+
+	// 		$destination = $point;
+
+
+
+	// 		$rs = $this->distance($origins,$destination);	
+
+
+
+	// 		$rs = str_replace(',', '.', $rs);
+
+
+
+	// 		$rs = str_replace(' mil', '', $rs);
+
+
+
+	// 		$distance = ($rs*1.609344);
+
+
+
+	// 		$time = (($request['end_time'] - $request['start_time'])/60);
+
+
+
+			
+
+
+
+
+
+	// 		$array = array('distance'=>$distance,
+
+	// 						'start_time'=>$request['start_time'],
+
+	// 						'end_time'=>$request['end_time'],
+
+	// 						'time'=>$time,
+
+	// 						'status'=>3);
+
+
+
+	// 		$this->db->where('id',$request['trip_id'])->update('booking',$array);
+
+
+
+	// 		$data = $this->db->select('car_type,id,distance,time,source_lat AS source_latitude,source_lng AS source_longitude,destination_lat AS destination_latitude,destination_lng AS destination_longitude')->where('id',$request['trip_id'])->get('booking')->row_array();
+
+
+
+	// 		$fare = $this->Webservices_driver_model->fare_calculate($data);
+
+			
+
+			
+
+
+
+	// 		$result = $this->Webservices_driver_model->get_trip_info($request['trip_id']);
+
+
+
+	// 		if($result){
+
+	// 			print json_encode(array('status'=>'success','data'=>$result));
+
+	// 		} else {
+
+	// 			print json_encode(array('status' =>'error','error'=>'211','message'=>'Invalid booking details'));
+
+	// 		}
+
+
+
+	// 	} else {
+
+	// 		print json_encode(array('status' =>'error','error'=>'210','message'=>'Something Went wrong'));
+
+	// 	}
+
+	// }
+
+
+
+
+
+
+
+	// public function distance($origins,$destination){
+
+	// 	$url = "https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins=$origins&destinations=$destination&mode=driving&language=pl-PL";
+
+ //        $ch = curl_init();
+
+ //        curl_setopt($ch, CURLOPT_URL, $url);
+
+ //        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+
+ //        curl_setopt($ch, CURLOPT_PROXYPORT, 3128);
+
+ //        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+
+ //        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+
+ //        $response = curl_exec($ch);
+
+ //        curl_close($ch);
+
+ //        $response_a = json_decode($response, true);
+
+ //        return $dist = $response_a['rows'][0]['elements'][0]['distance']['text'];
+
+ //        //print_r($response_a);
+
+	// }
+
+
+
+
+
+
+
+
+
+	// public function distance_fun(){
+
+		
+
+	// 	$destination = '40.6905615,-73.9976592&40.6905615,-73.9976592&40.6905615,-73.9976592&40.6905615,-73.9976592&40.6905615,-73.9976592&40.6905615,-73.9976592&40.659569,-73.933783&40.729029,-73.851524&40.6860072,-73.6334271&40.598566,-73.7527626&40.659569,-73.933783&40.729029,-73.851524&40.6860072,-73.6334271&40.598566,-73.7527626';
+
+
+
+	// 	$point = explode('&', $destination);
+
+	// 	echo '<pre>';
+
+	// 	//print_r($point);
+
+	// 	//die();
+
+
+
+	// 	foreach ($point as $rs) {
+
+	// 		$new = array();
+
+	// 		list($new['latitude'],$new['longitude']) = explode(',', $rs);
+
+	// 		$array[] = $new;
+
+	// 	}
+
+
+
+	// 	//print json_encode($array);
+
+
+
+	// 	$result = '[{"longitude":"-73.9976592","latitude":"40.6905615"},{"longitude":"-73.9976592","latitude":"40.6905615"},{"longitude":"-73.9976592","latitude":"40.6905615"},{"longitude":"-73.9976592","latitude":"40.6905615"},{"longitude":"-73.9976592","latitude":"40.6905615"},{"longitude":"-73.9976592","latitude":"40.6905615"},{"longitude":"-73.933783","latitude":"40.659569"},{"longitude":"-73.851524","latitude":"40.729029"},{"longitude":"-73.6334271","latitude":"40.6860072"},{"longitude":"-73.7527626","latitude":"40.598566"},{"longitude":"-73.933783","latitude":"40.659569"},{"longitude":"-73.851524","latitude":"40.729029"},{"longitude":"-73.6334271","latitude":"40.6860072"},{"longitude":"-73.7527626","latitude":"40.598566"}]';
+
+
+
+
+
+	// 	$result = json_decode($result);	
+
+
+
+		
+
+
+
+
+
+	// 	$array = array();
+
+	// 	foreach ($result as $rs) {
+
+			
+
+	// 		$latlng = $rs->latitude.','.$rs->longitude;
+
+	// 		//list($new['latitude'],$new['longitude']) = explode(',', $rs);
+
+	// 		$array[] = $latlng;
+
+	// 	}
+
+
+
+	// 	//print_r($array);
+
+
+
+
+
+	// 	//implode('glue', pieces)
+
+
+
+	// 	$point = implode('&', $array);
+
+
+
+		
+
+	// 	//implode('&', $array);
+
+	// 	$origins = '40.6655101,-73.89188969999998';//$array[0];
+
+	// 	$destination = $point;
+
+
+
+	// 	//echo $destination;
+
+	// 	//die();
+
+		
+
+
+
+	// 	$rs = $this->distance($origins,$destination);
+
+	// 	//print_r($rs);
+
+	// 	$res = $rs['rows'][0]['elements'];
+
+	// 	return $res[0]['distance'];
+
+	// }
+
+
+
+
+
+
+
+
+
+	public function trip_end(){
+
+		
+
+		header('Content-type: application/json');
+
+		if(isset(apache_request_headers()['Auth'])){
+
+			$auth = apache_request_headers()['Auth'];
+
+			$postdata = file_get_contents("php://input");
+
+			$request = json_decode($postdata,true);
+
+			$request['auth'] = $auth;
+
+
+
+			//$result = '[{"longitude":"-73.9976592","latitude":"40.6905615"},{"longitude":"-73.9976592","latitude":"40.6905615"},{"longitude":"-73.9976592","latitude":"40.6905615"},{"longitude":"-73.9976592","latitude":"40.6905615"},{"longitude":"-73.9976592","latitude":"40.6905615"},{"longitude":"-73.9976592","latitude":"40.6905615"},{"longitude":"-73.933783","latitude":"40.659569"},{"longitude":"-73.851524","latitude":"40.729029"},{"longitude":"-73.6334271","latitude":"40.6860072"},{"longitude":"-73.7527626","latitude":"40.598566"},{"longitude":"-73.933783","latitude":"40.659569"},{"longitude":"-73.851524","latitude":"40.729029"},{"longitude":"-73.6334271","latitude":"40.6860072"},{"longitude":"-73.7527626","latitude":"40.598566"}]';
+
+
+
+			$result = $request['path'];
+
+
+
+			
+
+			//$result = json_decode($result);
+
+			
+
+			$array = array();
+
+			foreach ($result as $rs) {
+
+				$latlng = $rs['latitude'].','.$rs['longitude'];
+
+				$array[] = $latlng;
+
+			}
+
+
+
+			//print_r($array);
+
+
+
+
+
+			$count = count($array);
+
+			$i = 0;
+
+			$distance_val = 0;
+
+			while($i<$count-1){
+
+				list($lat1, $lon1) = explode(',',$array[$i]);
+
+				list($lat2, $lon2) = explode(',',$array[$i+1]);
+
+				$unit = 'K';
+
+				$distance_val += $this->distance_calculate($lat1, $lon1, $lat2, $lon2, $unit);				
+
+				$i++;
+
+			}
+
+
+
+			//print_r($distance_val);
+
+
+
+			$rs = $distance_val;
+
+			
+
+				
+
+
+
+			
+
+			/*foreach ($result as $rs) {
+
+				
+
+				$latlng = $rs->latitude.','.$rs->longitude;
+
+				//list($new['latitude'],$new['longitude']) = explode(',', $rs);
+
+				$array[] = $latlng;
+
+			}*/
+
+
+
+			//print_r($array);
+
+
+
+			$res = $this->db->where('id',$request['trip_id'])->get('booking')->row();			
+
+
+
+			//$point = implode('&', $array);
+
+			//$origins = $res->source_lat','.$res->source_lng;
+
+			//$origins = $res->source_lat.','.$res->source_lng;
+
+			//print_r($origins);
+
+			
+
+
+
+			//$array[0];
+
+			//$origins ="40.6655101,-73.89188969999998";
+
+			//$destination = $point;
+
+
+
+			//echo '<br/>';
+
+
+
+			//echo $destination = "40.6905615,-73.9976592&40.6905615,-73.9976592&40.6905615,-73.9976592&40.6905615,-73.9976592&40.6905615,-73.9976592&40.6905615,-73.9976592&40.659569,-73.933783&40.729029,-73.851524&40.6860072,-73.6334271&40.598566,-73.7527626&40.659569,-73.933783&40.729029,-73.851524&40.6860072,-73.6334271&40.598566,-73.7527626";
+
+
+
+			//$rs = $this->distance($origins,$destination);
+
+			//print_r($rs);	
+
+
+
+			//$rs = str_replace(',', '.', $rs);
+
+
+
+			//$rs = str_replace(' mi', '', $rs);
+
+			//print_r($rs);
+
+
+
+			$distance = ($rs);
+
+
+
+			$time = (($request['end_time'] - $request['start_time'])/60);
+
+
+
+			$total_time = $time;
+
+
+
+			$hours = floor($time/60);
+
+
+
+			$minutes = ($time%60);
+
+
+
+			$time = $hours.':'.$minutes;
+
+			
+
+
+
+			
+
+
+
+
+
+			$array = array('distance'=>$distance,
+
+							'start_time'=>$request['start_time'],
+
+							'end_time'=>$request['end_time'],
+
+							'time'=>$time,
+
+							'trip_path'=>$point,
+
+							'status'=>3);
+
+
+
+			//print_r($array);
+
+
+
+			$this->db->where('id',$request['trip_id'])->update('booking',$array);
+
+			//echo $this->db->last_query();
+
+
+
+			$data = $this->db->select('car_type,id,distance,time,source_lat AS source_latitude,source_lng AS source_longitude,
+
+			destination_lat AS destination_latitude,destination_lng AS destination_longitude')->where('id',$request['trip_id'])->get('booking')->row_array();
+
+			$trip_id = $request['trip_id'];
+
+			//print_r($trip_id);
+
+			$data['time'] = $total_time;
+
+			$fare = $this->Webservices_driver_model->fare_calculate($data,$trip_id);
+
+			
+
+			
+
+
+
+			$result = $this->Webservices_driver_model->get_trip_info($request['trip_id']);
+
+			$this->Webservices_driver_model->message($request['trip_id']);
+
+			if($result){
+
+				print json_encode(array('status'=>'success','data'=>$result));
+
+			} else {
+
+				print json_encode(array('status' =>'error','error'=>'211','message'=>'Invalid booking details'));
+
+			}
+
+
+
+		} else {
+
+			print json_encode(array('status' =>'error','error'=>'210','message'=>'Something Went wrong'));
+
+		}
+
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+	public function distance($origins,$destination){
+	    
+	    
+	       $data1 = "SELECT * FROM settings WHERE id = '1' ";
+
+            $query1 = $this->db->query($data1);
+
+            $rs = $query1->row();
+            $key = $rs->key;
+
+
+		$url = "https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins=$origins&destinations=$destination&mode=driving&key=$key";
+
+		//$url = "https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins=40.6655101,-73.89188969999998&destinations=40.6905615,-73.9976592&40.6905615,-73.9976592&40.6905615,-73.9976592&40.6905615,-73.9976592&40.6905615,-73.9976592&40.6905615,-73.9976592&40.659569,-73.933783&40.729029,-73.851524&40.6860072,-73.6334271&40.598566,-73.7527626&40.659569,-73.933783&40.729029,-73.851524&40.6860072,-73.6334271&40.598566,-73.7527626&key=AIzaSyB1br9lwKFyEpCnS5elLan_90CCsYeak6I";
+
+        $ch = curl_init();
+
+        curl_setopt($ch, CURLOPT_URL, $url);
+
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+
+        curl_setopt($ch, CURLOPT_PROXYPORT, 3128);
+
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+
+        $response = curl_exec($ch);
+
+        curl_close($ch);
+
+        $response_a = json_decode($response, true);
+
+        return $dist = $response_a['rows'][0]['elements'][0]['distance']['value'];
+
+        //print_r($response_a);
+
+	}
+
+
+
+	function distance_calculate($lat1, $lon1, $lat2, $lon2, $unit) {
+
+		$theta = $lon1 - $lon2;
+
+		$dist = sin(deg2rad($lat1)) * sin(deg2rad($lat2)) +  cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * cos(deg2rad($theta));
+
+		$dist = acos($dist);
+
+		$dist = rad2deg($dist);
+
+		$miles = $dist * 60 * 1.1515;
+
+		$unit = strtoupper($unit);
+
+
+
+		return ($miles * 1.609344);
+
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	// public function forgot_password(){
+
+
+
+	// 	$postdata = file_get_contents("php://input");
+
+	// 	$request = json_decode($postdata,true);
+
+
+
+	// 	$this->load->library('email');
+
+ //        $config = Array(
+
+ //                'protocol' => 'smtp',
+
+ //                'smtp_host' => 'smtp.techlabz.in',
+
+ //                'smtp_port' => 587,
+
+ //                'smtp_user' => 'no-reply@techlabz.in', 
+
+ //                'smtp_pass' => 'baAEanx7', 
+
+ //                'smtp_timeout'=>20,
+
+ //                'mailtype' => 'html',
+
+ //                'charset' => 'iso-8859-1',
+
+ //                'wordwrap' => TRUE
+
+ //               );
+
+
+
+ //         $this->email->initialize($config);
+
+
+
+	//       $subject = 'LaTaxi';
+
+	//       $name= '';
+
+	//       $mailTemplate= 'text Message';
+
+
+
+ //        //$this->email->set_newline("\r\n");
+
+ //        $this->email->from('no-reply@techlabz.in', $name);
+
+ //        $this->email->to('doan.techware@gmail.com');
+
+ //        $this->email->subject($subject);
+
+ //        $this->email->message($mailTemplate);  
+
+ //        echo $this->email->send();
+
+
+
+
+
+
+
+	// 	$result = $this->Webservice_model->forgot_pswd($request);
+
+
+
+	// 	if($result){
+
+	// 		print json_encode(array('status'=>'success'));
+
+	// 	}else{
+
+	// 		print json_encode(array('status'=>'error','message'=>'Something Went wrong','error'=>'605'));
+
+	// 	}
+
+	// }
+
+
+public function send_email(){
+     $data = '{"name":"Adarsh","email":"adarsh.techware@gmail.com","message" :"Hi Team"}';
+
+        $data = json_decode($data);
+
+        
+
+        $this->load->library('email');
+        $config = Array(
+                'protocol' => 'smtp',
+                'smtp_host' => 'mail.techlabz.in',
+                'smtp_port' => 587,
+                'smtp_user' => 'no-reply@techlabz.in', // change it to yours
+                'smtp_pass' => 'k4$_a4%eD?Hi', // change it to yours
+                'smtp_timeout'=>20,
+                'mailtype' => 'html',
+                'charset' => 'iso-8859-1',
+                'wordwrap' => TRUE
+               );
+
+         $this->email->initialize($config);// add this line
+
+      $subject = 'New Mail';
+      $name= $data->name;
+      $mailTemplate=$data->message;
+
+        //$this->email->set_newline("\r\n");
+        $this->email->from('no-reply@techlabz.in', $name);
+        $this->email->to($data->email);
+        $this->email->subject($subject);
+        $this->email->message($mailTemplate);  
+        echo $this->email->send();
+        $rs = $this->email->print_debugger();
+}
+
+
+
+
+	public function forgot_password() {
+
+		header('Content-type: application/json');
+
+	 $data = json_decode(file_get_contents("php://input")); 
+
+	 $res = $this->Webservices_driver_model->forgetpassword($data); 
+
+	 if ($res) 
+
+	 	{
+
+
+echo json_encode(array( 'status' => 'success'));
+
+	  } 
+
+
+
+	 else  {
+
+echo json_encode(array( 'status' => 'error','message' =>'Sorry. Please Enter Your Correct Email.'));
+
+
+
+	  //$status = 'Sorry. Please Enter Your Correct Email.';
+	//print_r($status);
+
+	 // $msg = 'Sorry. Please Enter Your Correct Email.';
+
+	  }
+
+
+
+	 // echo json_encode(array( 'status' => $status, 'message' => $msg, 'data' => $res ));
+	  //echo json_encode(array( 'status' => $status));
+	   }
+
+
+
+	public function weekly_earnings(){
+
+		
+
+		header('Content-type: application/json');
+
+		if(isset(apache_request_headers()['Auth'])){
+
+			$auth = apache_request_headers()['Auth'];
+
+			$postdata = file_get_contents("php://input");
+
+			$request = json_decode($postdata,true);			
+
+
+
+			$query = $this->db->where('unique_id',$auth)->get('driver_auth_table');
+
+            $rs = $query->row();
+
+            $driv_id = $rs->driver_id;
+
+            //print_r($driv_id);
+
+            $request = $_GET;
+
+           // print_r($request);
+
+            if(!isset($request['week_of_year'])){
+
+            	$week_of_year = date('W')-1;
+
+            } else {
+
+            	$week_of_year = $request['week_of_year']-1;
+
+            }
+
+
+
+            if(!isset($request['year'])){
+
+            	$year = date('Y');
+
+            } else {
+
+            	$year = $request['year'];
+
+            }
+
+
+
+            $week_days = $this->getStartAndEndDate($week_of_year,$year);
+
+
+
+            $array = $week_days;
+
+
+
+          
+
+           $result =  $this->Webservices_driver_model->get_payout($array,$driv_id);
+
+           $result['week_of_the_year'] = $week_of_year+1;
+
+           $result['year'] = $year;
+
+     //        $result = array();
+
+
+
+     //       $fare = $this->Webservices_driver_model->get_payout($array,$driv_id);
+
+		   // $result['total_payout'] = $fare;
+
+	
+
+           if($result){
+
+				print json_encode(array('status'=>'success','data'=>$result));
+
+			} else {
+
+				print json_encode(array('status' =>'error','error'=>'211','message'=>'Something Went wrong'));
+
+			}
+
+
+
+
+
+
+
+		}else{
+
+			print json_encode(array('status' => 'error','message'=>'Something Went wrong','error'=>'605'));
+
+		}
+
+	}
+
+
+
+	function getStartAndEndDate($week, $year) {
+
+	    $time = strtotime("1 January $year", time());
+
+	    $day = date('w', $time);
+
+	    $time += ((7*$week)-$day)*24*3600;
+
+	    $return[0] = date('Y-m-d', $time);
+
+	    $j=1;
+
+	    for($i=1;$i<7;$i++){
+
+	    	$time += $j*24*3600;
+
+	    	$return[$i] = date('Y-m-d', $time);
+
+	    }	    
+
+	    return $return;
+
+	}
+
+
+
+	function get_cal($array){
+
+		//$array = array(10,12,15,18,24,30,42);
+
+		$count = count($array);
+
+		$i = 0;
+
+		$distance = 0;
+
+		while($i<$count-1){
+
+			$distance += $array[$i+1]-$array[$i];
+
+			$i++;
+
+		}
+
+
+
+		return $distance;
+
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+}
+
+	
