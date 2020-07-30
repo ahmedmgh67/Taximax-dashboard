@@ -1,812 +1,2769 @@
-<?php
-
-if (!defined('BASEPATH'))
-    exit('No direct script access allowed');
-
-class Admin extends CI_Controller {
-
-    function __construct() {
-        parent::__construct();
-        error_reporting(E_ERROR | E_PARSE);
-       
-        $this->load->library("pagination");
-        $this->load->helper('url');
-    }
-
-    public function index($par = NULL, $par2 = NULL) {
-        $session = $this->session->userdata('user');
-        if (!empty($session->id)) {
-            if (!empty($par)) {
-                $qry = $this->db->query("select u.*,r.pickup_adress,r.pikup_location as pickup_location,r.drop_locatoin as drop_location,r.drop_address,r.amount from rides r join users u on r.driver_id = u.user_id where ride_id = $par");
-                $res = $qry->result_array();
-                //$str = '[';
-                foreach ($res as $val) {
-                    //$str .= "{position:new google.maps.LatLng(" . floatval($val['latitude']) . ", " . floatval($val['longitude']) . ") , avatar:'" . $val['avatar'] . "', name:'" . $val['name'] . "', email:'" . $val['email'] . "', mobile:'" . $val['mobile'] . "'},";
-                    $a[] = array("u_lat" => floatval($val['latitude']), "u_lon" => floatval($val['longitude']), "email" => $val['email'], "u_name" => $val['name'], "avatar" => $val['avatar'], "mobile" => $val['mobile']);
-                }
-                // $str = rtrim($str, ',');
-                //$str .= ']';
-                if (!empty($par2)) {
-                    echo json_encode($a);
-                    die;
-                }
-                $z = explode(',',$res[0]['pickup_location']);
-                $b['res'] = $a;
-                
-                $b['pickup_address'] = $res[0]['pickup_adress'];
-                $b['drop_address'] = $res[0]['drop_address'];
-                
-                $b['pickup_start'] = $z[0];
-                $b['pickup_end'] = $z[1];
-                 $z = explode(',',$res[0]['drop_location']);
-                $b['drop_start'] = $z[0];
-                $b['drop_end'] = $z[1];
-                //$a['res'] = preg_replace('/"([^"]+)"\s*:\s*/', '$1:', json_encode($data));
-                $this->load->view('layout/header');
-                $this->load->view('layout/sidebar');
-                $this->load->view('index_new', $b);
-                $this->load->view('layout/footer');
-            } else {
-                $qry = $this->db->query("select * from users where utype = 1");
-                $res = $qry->result_array();
-                $str = '[';
-                foreach ($res as $val) {
-                    $str .= "{position:new google.maps.LatLng(" . floatval($val['latitude']) . ", " . floatval($val['longitude']) . ") , avatar:'" . $val['avatar'] . "', name:'" . $val['name'] . "', email:'" . $val['email'] . "', mobile:'" . $val['mobile'] . "'},";
-                }
-                $str = rtrim($str, ',');
-                $str .= ']';
-                $a['res'] = $str;
-                //$a['res'] = preg_replace('/"([^"]+)"\s*:\s*/', '$1:', json_encode($data));
-                $this->load->view('layout/header');
-                $this->load->view('layout/sidebar');
-                $this->load->view('admin/index', $a);
-                $this->load->view('layout/footer');
-            }
-        } else {
-            redirect($this->config->base_url());
-        }
-    }
-
-    public function login() {
-        if (!empty($_POST)) {
-            $res = $this->db->get_where("admin", array("username" => $_POST['username'], "password" => md5($_POST['password'])))->row();
-            if (!empty($res->username)) {
-                unset($res->password);
-                $this->session->set_userdata("user", $res);
-                redirect($this->config->base_url() . 'admin/users', 'refresh');
-            } else {
-                redirect($this->config->base_url(), 'refresh');
-            }
-        } else {
-            $this->load->view("admin/login");
-        }
-    }
-
-    public function drivers($type = NULL) {
-        $session = $this->session->userdata('user');
-        if (empty($session->id)) {
-            redirect($this->config->base_url());
-        }
-        if ($type == 'update') {
-            unset($_POST['confirmpass']);
-            unset($_POST['submit-register']);
-            if (!empty($_FILES['avatar']['name'])) {
-                $path = $_FILES['avatar']['name'];
-                $ext = pathinfo($path, PATHINFO_EXTENSION);
-                $rand = 'img_' . rand(1, 500) . rand(500, 1000) . rand(1, 500);
-                $config['upload_path'] = BASEPATH . "../avatar/";
-                $config['allowed_types'] = '*';
-                $config['file_name'] = $rand;
-                $this->load->library('upload', $config);
-                $this->upload->overwrite = true;
-                $this->upload->do_upload('avatar');
-                $data = $this->upload->data();
-                $_POST['avatar'] = $this->config->base_url() . "avatar/" . $rand . '.' . $ext;
-            }
-            if (empty($_POST['password'])) {
-                unset($_POST['password']);
-            }else{
-                $_POST['password'] = md5($_POST['password']);
-            }
-            $this->db->where('user_id', $_POST['user_id']);
-            $this->db->update('users', $_POST);
-            $this->session->set_userdata(array("msg" => "data successfully updated", "type" => "success"));
-            header('location:' . $this->config->base_url() . 'admin/drivers');
-        } else {
-            $config = array();
-            $config["base_url"] = $this->config->base_url() . "admin/drivers";
-            $config["total_rows"] = count($this->db->get_where("users", array("utype" => 1))->result());
-            $config["per_page"] = 10;
-            $config["uri_segment"] = 3;
-
-            $config['full_tag_open'] = '<ul class="pagination">';
-            $config['full_tag_close'] = '</ul>';
-            $config['first_link'] = false;
-            $config['last_link'] = false;
-            $config['first_tag_open'] = '<li>';
-            $config['first_tag_close'] = '</li>';
-            $config['prev_link'] = '&laquo';
-            $config['prev_tag_open'] = '<li class="prev">';
-            $config['prev_tag_close'] = '</li>';
-            $config['next_link'] = '&raquo';
-            $config['next_tag_open'] = '<li>';
-            $config['next_tag_close'] = '</li>';
-            $config['last_tag_open'] = '<li>';
-            $config['last_tag_close'] = '</li>';
-            $config['cur_tag_open'] = '<li class="active"><a href="#">';
-            $config['cur_tag_close'] = '</a></li>';
-            $config['num_tag_open'] = '<li>';
-            $config['num_tag_close'] = '</li>';
-
-            $this->pagination->initialize($config);
-            $data["links"] = $this->pagination->create_links();
-
-
-            $page = ($this->uri->segment(3)) ? $this->uri->segment(3) : 0;
-            !empty($config["per_page"]) ? $this->db->limit($config["per_page"], $page) : '';
-            $data["result"] = $this->db->get_where("users", array("utype" => 1))->result(); //employee is a table in the database
-
-
-            $this->load->view('layout/header');
-            $this->load->view('layout/sidebar');
-            $this->load->view('admin/drivers', $data);
-            $this->load->view('layout/footer');
-        }
-    }
-
-    public function drivers_search() {
-        $session = $this->session->userdata('user');
-        if (empty($session->id)) {
-            redirect($this->config->base_url());
-        }
-        $search_term = $this->searchterm_handler($_POST, TRUE);
-
-        $config_src = array();
-        $config_src["base_url"] = $this->config->base_url() . "admin/drivers_search";
-
-        $str = "select * from users where utype = 1";
-        if (!empty($search_term['email'])) {
-            $str .= " and (email like '%" . $search_term['email'] . "%' or name like '%" . $search_term['email'] . "%')";
-        }
-        if ($search_term['is_active'] == '1' || $search_term['is_active'] == '0') {
-            $str .= " and status = " . $search_term['is_active'] . "";
-        }
-
-        $qry = $this->db->query($str);
-
-        $config_src["total_rows"] = count($qry->result());
-        $config_src["per_page"] = 10;
-        $config_src["uri_segment"] = 3;
-        $choice = $config_src["total_rows"] / $config_src["per_page"];
-        $config_src["num_links"] = round($choice);
-//config for bootstrap pagination class integration
-        $config_src['full_tag_open'] = '<ul class="pagination">';
-        $config_src['full_tag_close'] = '</ul>';
-        $config_src['first_link'] = false;
-        $config_src['last_link'] = false;
-        $config_src['first_tag_open'] = '<li>';
-        $config_src['first_tag_close'] = '</li>';
-        $config_src['prev_link'] = '&laquo';
-        $config_src['prev_tag_open'] = '<li class="prev">';
-        $config_src['prev_tag_close'] = '</li>';
-        $config_src['next_link'] = '&raquo';
-        $config_src['next_tag_open'] = '<li>';
-        $config_src['next_tag_close'] = '</li>';
-        $config_src['last_tag_open'] = '<li>';
-        $config_src['last_tag_close'] = '</li>';
-        $config_src['cur_tag_open'] = '<li class="active"><a href="#">';
-        $config_src['cur_tag_close'] = '</a></li>';
-        $config_src['num_tag_open'] = '<li>';
-        $config_src['num_tag_close'] = '</li>';
-        $this->pagination->initialize($config_src);
-        $page = ($this->uri->segment(3)) ? $this->uri->segment(3) : 0;
-
-        $str = "select * from users where utype = 1";
-        if (!empty($search_term['email'])) {
-            $str .= " and (email like '%" . $search_term['email'] . "%' or name like '%" . $search_term['email'] . "%')";
-        }
-        if ($search_term['is_active'] == '1' || $search_term['is_active'] == '0') {
-            $str .= " and status = " . $search_term['is_active'] . "";
-        }
-
-        $str .= " LIMIT $page," . $config_src["per_page"] . "";
-        $qry = $this->db->query($str);
-        $data['result'] = $qry->result();
-
-        $data['data'] = $search_term;
-
-        $data["links"] = $this->pagination->create_links();
-        $data['pg'] = $page;
-        $data['chk'] = "search";
-
-        $this->load->view('layout/header');
-        $this->load->view('layout/sidebar');
-        $this->load->view('admin/drivers', $data);
-        $this->load->view('layout/footer');
-    }
-
-    public function users($type = NULL) {
-        $session = $this->session->userdata('user');
-        if (empty($session->id)) {
-            redirect($this->config->base_url());
-        }
-        if ($type == 'update') {
-            unset($_POST['confirmpass']);
-            unset($_POST['submit-register']);
-            if (!empty($_FILES['avatar']['name'])) {
-                $path = $_FILES['avatar']['name'];
-                $ext = pathinfo($path, PATHINFO_EXTENSION);
-                $rand = 'img_' . rand(1, 500) . rand(500, 1000) . rand(1, 500);
-                $config['upload_path'] = BASEPATH . "../avatar/";
-                $config['allowed_types'] = '*';
-                $config['file_name'] = $rand;
-                $this->load->library('upload', $config);
-                $this->upload->overwrite = true;
-                $this->upload->do_upload('avatar');
-                $data = $this->upload->data();
-                $_POST['avatar'] = $this->config->base_url() . "avatar/" . $rand . '.' . $ext;
-            }
-            if (empty($_POST['password'])) {
-                unset($_POST['password']);
-            }else{
-            	$_POST['password'] = md5($_POST['password']);
-            }
-            $this->db->where('user_id', $_POST['user_id']);
-            $this->db->update('users', $_POST);
-            $this->session->set_userdata(array("msg" => "data successfully updated", "type" => "success"));
-            header('location:' . $this->config->base_url() . 'admin/users');
-        } elseif ($type == "delete") {
-            $this->db->where('user_id', $_POST['user_id']);
-            $this->db->delete('users');
-        } else {
-
-            $config = array();
-            $config["base_url"] = $this->config->base_url() . "admin/users";
-            $config["total_rows"] = count($this->db->get_where("users", array("utype" => 0))->result());
-            $config["per_page"] = 10;
-            $config["uri_segment"] = 3;
-
-            $config['full_tag_open'] = '<ul class="pagination">';
-            $config['full_tag_close'] = '</ul>';
-            $config['first_link'] = false;
-            $config['last_link'] = false;
-            $config['first_tag_open'] = '<li>';
-            $config['first_tag_close'] = '</li>';
-            $config['prev_link'] = '&laquo';
-            $config['prev_tag_open'] = '<li class="prev">';
-            $config['prev_tag_close'] = '</li>';
-            $config['next_link'] = '&raquo';
-            $config['next_tag_open'] = '<li>';
-            $config['next_tag_close'] = '</li>';
-            $config['last_tag_open'] = '<li>';
-            $config['last_tag_close'] = '</li>';
-            $config['cur_tag_open'] = '<li class="active"><a href="#">';
-            $config['cur_tag_close'] = '</a></li>';
-            $config['num_tag_open'] = '<li>';
-            $config['num_tag_close'] = '</li>';
-
-            $this->pagination->initialize($config);
-            $data["links"] = $this->pagination->create_links();
-
-
-            $page = ($this->uri->segment(3)) ? $this->uri->segment(3) : 0;
-            !empty($config["per_page"]) ? $this->db->limit($config["per_page"], $page) : '';
-            $data["result"] = $this->db->get_where("users", array("utype" => 0))->result(); //employee is a table in the database
-
-
-
-            $this->load->view('layout/header');
-            $this->load->view('layout/sidebar');
-            $this->load->view('admin/users', $data);
-            $this->load->view('layout/footer');
-        }
-    }
-
-    public function users_search() {
-        $session = $this->session->userdata('user');
-        if (empty($session->id)) {
-            redirect($this->config->base_url());
-        }
-        $search_term = $this->searchterm_handler($_POST, TRUE);
-
-        $config_src = array();
-        $config_src["base_url"] = $this->config->base_url() . "admin/user_search";
-
-        $str = "select * from users where utype = 0";
-        if (!empty($search_term['email'])) {
-            $str .= " and (email like '%" . $search_term['email'] . "%' or name like '%" . $search_term['email'] . "%')";
-        }
-        if ($search_term['is_active'] == '1' || $search_term['is_active'] == '0') {
-            $str .= " and status = " . $search_term['is_active'] . "";
-        }
-
-        $qry = $this->db->query($str);
-
-        $config_src["total_rows"] = count($qry->result());
-        $config_src["per_page"] = 10;
-        $config_src["uri_segment"] = 3;
-        $choice = $config_src["total_rows"] / $config_src["per_page"];
-        $config_src["num_links"] = round($choice);
-//config for bootstrap pagination class integration
-        $config_src['full_tag_open'] = '<ul class="pagination">';
-        $config_src['full_tag_close'] = '</ul>';
-        $config_src['first_link'] = false;
-        $config_src['last_link'] = false;
-        $config_src['first_tag_open'] = '<li>';
-        $config_src['first_tag_close'] = '</li>';
-        $config_src['prev_link'] = '&laquo';
-        $config_src['prev_tag_open'] = '<li class="prev">';
-        $config_src['prev_tag_close'] = '</li>';
-        $config_src['next_link'] = '&raquo';
-        $config_src['next_tag_open'] = '<li>';
-        $config_src['next_tag_close'] = '</li>';
-        $config_src['last_tag_open'] = '<li>';
-        $config_src['last_tag_close'] = '</li>';
-        $config_src['cur_tag_open'] = '<li class="active"><a href="#">';
-        $config_src['cur_tag_close'] = '</a></li>';
-        $config_src['num_tag_open'] = '<li>';
-        $config_src['num_tag_close'] = '</li>';
-        $this->pagination->initialize($config_src);
-        $page = ($this->uri->segment(3)) ? $this->uri->segment(3) : 0;
-
-        $str = "select * from users where utype = 0";
-        if (!empty($search_term['email'])) {
-            $str .= " and (email like '%" . $search_term['email'] . "%' or name like '%" . $search_term['email'] . "%')";
-        }
-        if ($search_term['is_active'] == '1' || $search_term['is_active'] == '0') {
-            $str .= " and status = " . $search_term['is_active'] . "";
-        }
-
-        $str .= " LIMIT $page," . $config_src["per_page"] . "";
-        $qry = $this->db->query($str);
-        $data['result'] = $qry->result();
-
-        $data['data'] = $search_term;
-
-        $data["links"] = $this->pagination->create_links();
-        $data['pg'] = $page;
-        $data['chk'] = "search";
-
-        $this->load->view('layout/header');
-        $this->load->view('layout/sidebar');
-        $this->load->view('admin/users', $data);
-        $this->load->view('layout/footer');
-    }
-
-    public function searchterm_handler($searchterm) {
-        if ($searchterm) {
-            $this->session->set_userdata('searchterm', $searchterm);
-            return $searchterm;
-        } elseif ($this->session->userdata('searchterm')) {
-            $searchterm = $this->session->userdata('searchterm');
-            return $searchterm;
-        } else {
-            $searchterm = '';
-            return $searchterm;
-        }
-    }
-
-    public function getUser() {
-        $session = $this->session->userdata('user');
-        if (empty($session->id)) {
-            redirect($this->config->base_url());
-        }
-        $res['post'] = $this->db->get_where("users", array("user_id" => $this->input->post("user_id")))->row_array();
-        $this->load->view('admin/ajax/edit_user', $res);
-    }
-
-    public function getDriver() {
-        $session = $this->session->userdata('user');
-        if (empty($session->id)) {
-            redirect($this->config->base_url());
-        }
-        $res['post'] = $this->db->get_where("users", array("user_id" => $this->input->post("user_id")))->row_array();
-        $this->load->view('admin/ajax/edit_driver', $res);
-    }
-
-    public function viewDriver() {
-        $session = $this->session->userdata('user');
-        if (empty($session->id)) {
-            redirect($this->config->base_url());
-        }
-        $res['post'] = $this->db->get_where("users", array("user_id" => $this->input->post("user_id")))->row_array();
-        $this->load->view('admin/ajax/view_driver', $res);
-    }
-
-    public function getPayments() {
-        
-        $qry = $this->db->query("SHOW COLUMNS FROM `rides` LIKE 'pay_driver'");
-        $exists = $qry->row();
-        if(!$exists) {
-            $this->db->query("ALTER TABLE `rides`  ADD `pay_driver` TINYINT(1) NULL DEFAULT '0'  AFTER `payment_status`;");
-        }
-        
-        $session = $this->session->userdata('user');
-        if (empty($session->id)) {
-            redirect($this->config->base_url());
-        }
-        $this->db->select("SUM(r.amount) as amount,l.name as driver,l.user_id,l.paypal_id");
-        $this->db->from("rides r");
-        $this->db->join("users l", "l.user_id = r.driver_id");
-        $this->db->where("r.pay_driver", 0);
-	    $this->db->where("r.status", "COMPLETED");
-        $this->db->group_by('r.driver_id');
-        $this->db->order_by('ride_id', 'desc');
-        $qry = $this->db->get();
-        $data["result"] = $qry->result();
-
-
-        $this->load->view('layout/header');
-        $this->load->view('layout/sidebar');
-        $this->load->view('admin/get_payments', $data);
-        $this->load->view('layout/footer');
-    }
-
-    public function getrides() {
-        $session = $this->session->userdata('user');
-        if (empty($session->id)) {
-            redirect($this->config->base_url());
-        }
-        $config = array();
-        $config["base_url"] = $this->config->base_url() . "admin/getrides";
-        $config["total_rows"] = count($this->db->get("rides")->result());
-        $config["per_page"] = 10;
-        $config["uri_segment"] = 3;
-
-        $config['full_tag_open'] = '<ul class="pagination">';
-        $config['full_tag_close'] = '</ul>';
-        $config['first_link'] = false;
-        $config['last_link'] = false;
-        $config['first_tag_open'] = '<li>';
-        $config['first_tag_close'] = '</li>';
-        $config['prev_link'] = '&laquo';
-        $config['prev_tag_open'] = '<li class="prev">';
-        $config['prev_tag_close'] = '</li>';
-        $config['next_link'] = '&raquo';
-        $config['next_tag_open'] = '<li>';
-        $config['next_tag_close'] = '</li>';
-        $config['last_tag_open'] = '<li>';
-        $config['last_tag_close'] = '</li>';
-        $config['cur_tag_open'] = '<li class="active"><a href="#">';
-        $config['cur_tag_close'] = '</a></li>';
-        $config['num_tag_open'] = '<li>';
-        $config['num_tag_close'] = '</li>';
-
-        $this->pagination->initialize($config);
-        $data["links"] = $this->pagination->create_links();
-
-
-        $page = ($this->uri->segment(3)) ? $this->uri->segment(3) : 0;
-        !empty($config["per_page"]) ? $this->db->limit($config["per_page"], $page) : '';
-        $this->db->select("r.*,u.name as customer,l.name as driver");
-        $this->db->from("rides r");
-        $this->db->join("users u", "u.user_id = r.user_id");
-        $this->db->join("users l", "l.user_id = r.driver_id");
-        $qry = $this->db->get();
-        $data["result"] = $qry->result();
-// echo $this->db->last_query(); die;
-        $this->load->view('layout/header');
-        $this->load->view('layout/sidebar');
-        $this->load->view('admin/get_rides', $data);
-        $this->load->view('layout/footer');
-    }
-
-    public function rides_search() {
-        $session = $this->session->userdata('user');
-        if (empty($session->id)) {
-            redirect($this->config->base_url());
-        }
-        $search_term = $this->searchterm_handler($_POST, TRUE);
-
-        $config_src = array();
-        $config_src["base_url"] = $this->config->base_url() . "admin/rides_search";
-
-        $this->db->select("r.*,u.name as customer,l.name as driver");
-        $this->db->from("rides r");
-        $this->db->join("users u", "u.user_id = r.user_id");
-        $this->db->join("users l", "l.user_id = r.driver_id");
-        $where = "r.ride_id != ''";
-        if (!empty($search_term['email'])) {
-            $where .= " and (u.name like '%" . $search_term['email'] . "%' OR l.name like '%" . $search_term['email'] . "%' OR r.pickup_adress like '%" . $search_term['email'] . "%' OR r.drop_address like '%" . $search_term['email'] . "%')";
-        }
-        if (!empty($search_term['is_active'])) {
-            $where .= " and r.status = '" . $search_term['is_active'] . "'";
-        }
-        $this->db->where($where);
-        $qry = $this->db->get();
-
-
-        $config_src["total_rows"] = count($qry->result());
-        $config_src["per_page"] = 10;
-        $config_src["uri_segment"] = 3;
-        $choice = $config_src["total_rows"] / $config_src["per_page"];
-        $config_src["num_links"] = round($choice);
-//config for bootstrap pagination class integration
-        $config_src['full_tag_open'] = '<ul class="pagination">';
-        $config_src['full_tag_close'] = '</ul>';
-        $config_src['first_link'] = false;
-        $config_src['last_link'] = false;
-        $config_src['first_tag_open'] = '<li>';
-        $config_src['first_tag_close'] = '</li>';
-        $config_src['prev_link'] = '&laquo';
-        $config_src['prev_tag_open'] = '<li class="prev">';
-        $config_src['prev_tag_close'] = '</li>';
-        $config_src['next_link'] = '&raquo';
-        $config_src['next_tag_open'] = '<li>';
-        $config_src['next_tag_close'] = '</li>';
-        $config_src['last_tag_open'] = '<li>';
-        $config_src['last_tag_close'] = '</li>';
-        $config_src['cur_tag_open'] = '<li class="active"><a href="#">';
-        $config_src['cur_tag_close'] = '</a></li>';
-        $config_src['num_tag_open'] = '<li>';
-        $config_src['num_tag_close'] = '</li>';
-        $this->pagination->initialize($config_src);
-        $page = ($this->uri->segment(3)) ? $this->uri->segment(3) : 0;
-
-        !empty($config["per_page"]) ? $this->db->limit($config["per_page"], $page) : '';
-        $this->db->select("r.*,u.name as customer,l.name as driver");
-        $this->db->from("rides r");
-        $this->db->join("users u", "u.user_id = r.user_id");
-        $this->db->join("users l", "l.user_id = r.driver_id");
-        $where = "r.ride_id != ''";
-
-        if (!empty($search_term['email'])) {
-            $where .= " and (u.name like '%" . $search_term['email'] . "%' OR l.name like '%" . $search_term['email'] . "%' OR r.pickup_adress like '%" . $search_term['email'] . "%' OR r.drop_address like '%" . $search_term['email'] . "%')";
-        }
-        if (!empty($search_term['is_active'])) {
-            $where .= " and r.status = '" . $search_term['is_active'] . "'";
-        }
-        $this->db->where($where);
-        $qry = $this->db->get();
-        $data["result"] = $qry->result();
-
-        $data['data'] = $search_term;
-
-        $data["links"] = $this->pagination->create_links();
-        $data['pg'] = $page;
-        $data['chk'] = "search";
-
-        $this->load->view('layout/header');
-        $this->load->view('layout/sidebar');
-        $this->load->view('admin/get_rides', $data);
-        $this->load->view('layout/footer');
-    }
-
-    public function pay() {
-        $session = $this->session->userdata('user');
-        if (empty($session->id)) {
-            redirect($this->config->base_url());
-        }
-        $data = $this->input->post();
-        $ids = $data['ids'];
-
-        $vEmailSubject = 'Paypal payment';
-        $environment = 'sandbox'; // or 'beta-sandbox' or 'live'.
-// Set request-specific fields.
-        $emailSubject = urlencode($vEmailSubject);
-        $receiverType = urlencode('EmailAddress');
-        $currency = urlencode('USD'); // or other currency ('GBP', 'EUR', 'JPY', 'CAD', 'AUD')
-
-        $keywords = explode(',', $ids);
-        $receivers = array();
-        $cnt = 1;
-        foreach ($keywords as $keyword) {
-            $keyword = trim($keyword);
-            // $res = $this->db->get_where("users", array("user_id" => $keyword))->row();
-            $this->db->select("SUM(r.amount) as amount,l.paypal_id");
-            $this->db->from("rides r");
-            $this->db->join("users l", "l.user_id = r.driver_id");
-            $this->db->where("r.pay_driver", 0);
-            $this->db->where("r.status", "COMPLETED");
-            $this->db->where("l.user_id", $keyword);
-            $this->db->group_by('r.driver_id');
-            $qry = $this->db->get();
-            $res = $qry->row();
-
-            $receivers[] = array(
-                'receiverEmail' => $res->paypal_id,
-                'amount' => number_format((float) ($res->amount * $this->session->userdata("user")->driver_rate) / 100, 2, '.', ''),
-                'uniqueID' => "id_" . ++$cnt,
-                'note' => " pagamento de comiss Fashiontuts"
-            );
-            $cnt++;
-        }
-
-
-        $receiversLenght = count($receivers);
-
-// Add request-specific fields to the request string.
-        $nvpStr = "&EMAILSUBJECT=$emailSubject&RECEIVERTYPE=$receiverType&CURRENCYCODE=$currency";
-
-        $receiversArray = array();
-
-        for ($i = 0; $i < $receiversLenght; $i++) {
-            $receiversArray[$i] = $receivers[$i];
-        }
-
-        foreach ($receiversArray as $i => $receiverData) {
-            $receiverEmail = urlencode($receiverData['receiverEmail']);
-            $amount = urlencode($receiverData['amount']);
-            $uniqueID = urlencode($receiverData['uniqueID']);
-            $note = urlencode($receiverData['note']);
-            $nvpStr .= "&L_EMAIL$i=$receiverEmail&L_Amt$i=$amount&L_UNIQUEID$i=$uniqueID&L_NOTE$i=$note";
-        }
-
-// Execute the API operation; see the PPHttpPost function above.
-        $httpParsedResponseAr = self::PPHttpPost('MassPay', $nvpStr);
-
-        if ("SUCCESS" == strtoupper($httpParsedResponseAr["ACK"]) || "SUCCESSWITHWARNING" == strtoupper($httpParsedResponseAr["ACK"])) {
-//            echo 'MassPay Completed Successfully: ' . $httpParsedResponseAr;
-
-            $date = date('Y-m-d H:i:s');
-            $keywords = explode(',', $ids);
-            foreach ($keywords as $keyword) {
-                $keyword = trim($keyword);
-                $this->db->select("SUM(r.amount) as amount,l.paypal_id");
-                $this->db->from("rides r");
-                $this->db->join("users l", "l.user_id = r.driver_id");
-                $this->db->where("r.pay_driver", 0);
-                $this->db->where("r.status", "COMPLETED");
-                $this->db->where("l.user_id", $keyword);
-                $this->db->group_by('r.driver_id');
-                $qry = $this->db->get();
-                $res = $qry->row();
-                $this->db
-                        ->set('pay_driver', 1)
-                        ->where('user_id', $keyword)
-                        ->update('rides');
-                $data = array(
-                    'driver_id' => $keyword,
-                    'amount' => ($res->amount * 10) / 100
-                );
-                $this->db->insert("payment_history", $data);
-            }
-            //$this->session->set_flashdata('flashPaySuccess', 'Added');
-            echo 'ok';
-        } else {
-            // echo '\nMassPay failed: ';
-           // print_r($httpParsedResponseAr);
-            $this->session->set_flashdata('flashPayError', 'Added');
-            echo 'fail';
-        }
-       // echo 1;
-    }
-
-    function PPHttpPost($methodName_, $nvpStr_) {
-        global $environment;
-
-// Set up your API credentials, PayPal end point, and API version.
-// How to obtain API credentials:
-// https://cms.paypal.com/us/cgi-bin/?cmd=_render-content&content_ID=developer/e_howto_api_NVPAPIBasics#id084E30I30RO
-        $API_UserName = urlencode($this->session->userdata('user')->paypal_id);
-        $API_Password = urlencode($this->session->userdata('user')->paypal_password);
-        $API_Signature = urlencode($this->session->userdata('user')->signature);
-//$API_Endpoint = "https://api-3t.paypal.com/nvp";
-
-        $API_Endpoint = "https://api-3t.sandbox.paypal.com/nvp";
-
-        $version = urlencode('2.3');
-
-// Set the curl parameters.
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $API_Endpoint);
-        curl_setopt($ch, CURLOPT_VERBOSE, 1);
-
-// Turn off the server and peer verification (TrustManager Concept).
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, FALSE);
-
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_POST, 1);
-
-// Set the API operation, version, and API signature in the request.
-        $nvpreq = "METHOD=$methodName_&VERSION=$version&PWD=$API_Password&USER=$API_UserName&SIGNATURE=$API_Signature$nvpStr_";
-
-// Set the request as a POST FIELD for curl.
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $nvpreq . "&" . $nvpStr_);
-
-// Get response from the server.
-        $httpResponse = curl_exec($ch);
-
-        if (!$httpResponse) {
-            echo $methodName_ . ' failed: ' . curl_error($ch) . '(' . curl_errno($ch) . ')';
-        }
-
-// Extract the response details.
-        $httpResponseAr = explode("&", $httpResponse);
-
-        $httpParsedResponseAr = array();
-        foreach ($httpResponseAr as $i => $value) {
-            $tmpAr = explode("=", $value);
-            if (sizeof($tmpAr) > 1) {
-                $httpParsedResponseAr[$tmpAr[0]] = $tmpAr[1];
-            }
-        }
-
-        if ((0 == sizeof($httpParsedResponseAr)) || !array_key_exists('ACK', $httpParsedResponseAr)) {
-            exit("Invalid HTTP Response for POST request($nvpreq) to $API_Endpoint.");
-        }
-//        print_r($httpParsedResponseAr);
-
-        return $httpParsedResponseAr;
-    }
-
-    public function logout() {
-
-        $this->session->sess_destroy();
-
-        redirect($this->config->base_url(), 'refresh');
-    }
-    public function mail_setting(){
-		if (!empty($_POST)) {
-		    	
-			if(!empty($_POST['SMTP_HOST']) && !empty($_POST['SMTP_PORT'])  && !empty($_POST['SMTP_USER'])  && !empty($_POST['SMTP_PASS'])){
-                $this->db->where('name','SMTP_HOST');
-                $this->db->update("settings", array("value"=>$_POST['SMTP_HOST']));
-                
-                $this->db->where('name','SMTP_PORT');
-                $this->db->update("settings", array("value"=>$_POST['SMTP_PORT']));
-				
-				$this->db->where('name','SMTP_USER');
-                $this->db->update("settings", array("value"=>$_POST['SMTP_USER']));
-                
-                $this->db->where('name','SMTP_PASS');
-                $this->db->update("settings", array("value"=>$_POST['SMTP_PASS']));
-                
-				$this->db->where('name','FROM');
-                $this->db->update("settings", array("value"=>$_POST['FROM']));
-				
-            }
-			$this->session->set_userdata(array("msg" => "data successfully updated", "type" => "success"));
-            redirect($this->config->base_url() . 'admin/settings');
-        }
+<?php if ( ! defined('BASEPATH')) exit('No direct script access allowed');
+
+class Admin extends CI_Controller
+{
+	public $zone_name = CUSTOM_ZONE_NAME;
+	
+	// construct call
+	public function __construct()
+	{
+	parent::__construct();
+	$this->load->helper(array('form', 'url'));
+	$this->load->helper('date');
+	$this->load->helper('file');
+	$this->load->library('form_validation');
+	$this->load->model('Model_admin','home');
+	$this->load->database();
+	$this->load->library('session');
+	$this->load->library('image_lib');
+	$this->load->helper('cookie');
+	$this->load->helper('url');
+	$this->load->library('email');
+	session_start();
 	}
 
-    public function settings() {
-        $session = $this->session->userdata('user');
-        if (empty($session->id)) {
-            redirect($this->config->base_url());
-        }
-        if (!empty($_POST['new_password']) && !empty($_POST['old_password'])) {
-        	
-            $qry = $this->db->query("select * from admin where password = md5('" . $_POST['old_password'] . "')");
-            $res = $qry->result();
-            if (!empty($res)) {
-                $_POST['password'] = md5($_POST['new_password']);
-                unset($_POST['new_password']);
-                unset($_POST['old_password']);
-            } else {
-                $this->session->set_userdata(array("msg" => "Wrong password enter", "type" => "error"));
-                redirect($this->config->base_url() . 'admin/settings', 'refresh');
-            }
-        }
-        if (!empty($_POST)) {
+	// permission call
+	public function permission()
+	{
+		//$data=$_POST;
+		$permission="";
+
+		if(($this->session->userdata('permission'))) {
+			$ff = $this->router->fetch_method();
+
+			$pm = $this->db->query("SELECT * FROM  pages WHERE pages='$ff'");
+
+			if($pm->num_rows == 1) {
+				$upm = $pm->row('p_id');
+				$id=explode(',',$this->session->userdata('permission'));
+				if(in_array($upm,$id)) {
+					$permission = "access";
+				} else {
+					$permission = "failed";
+					redirect('admin/not_admin');
+				}
+			} else {
+				$permission = "failed";
+			}
+		}
+		return $permission;
+	}
+
+	// index page call
+	public function index()
+	{
+   	$this->load->view('admin-login');
+	}
+
+	// admin login call
+	public function adminlogin()
+	{
+		$data=$_POST;
+		$result = $this->home->login($data);
+		echo $result;
+	}
+
+	// admin logout call
+	public function logout()
+	{
+		$this->session->unset_userdata('username-admin');
+		//redirect('/', 'refresh');
+		delete_cookie('username-admin');
+		redirect('/admin', 'refresh');
+	}
+
+	// drivesignup call
+	public function driversignup()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+			if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				$this->load->view('driver_signup');
+			}else{
+				redirect('admin/not_admin');
+			}
+		}else{
+			redirect('admin/index');
+		}
+	}
+
+	// admin profile call
+	public function profile()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+			if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				$this->load->view('admin-profile');
+			}else{
+				redirect('admin/not_admin');
+			}
+		}else{
+			redirect('admin/index');
+		}
+	}
+
+	// admin password change call
+	public function password_change()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+			if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				$this->load->view('admin-change-password');
+			}else{
+				redirect('admin/not_admin');
+			}
+		}else{
+			redirect('admin/index');
+		}
+	}
+
+	//dashboard call
+	public function dashboard()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+			if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				$this->load->view('dashboard');
+			}else{
+				redirect('admin/not_admin');
+			}
+		}else{
+			redirect('admin/index');
+		}
+	}
+
+	// manage user call
+	public function manage_user()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+			if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				if($this->input->get('flag')){
+					$filter='flag';
+					$data['query']=$filter;
+				}
+				else{
+					$data['query']= NULL;
+				}
+				$this->load->view('manage-user',$data);
+			}else{
+				redirect('admin/not_admin');
+			}
+		}else{
+			redirect('admin/index');
+		}
+	}
+
+	// add user call
+	/*public function adduser()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+			if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				$this->load->view('admin-add-userdetails');
+			}else{
+				redirect('admin/not_admin');
+			}
+		}else{
+			redirect('admin/index');
+		}
+	}*/
+
+	// insert user call
+	/*public function insertuser()
+	{
+		$data=$_POST;
+		//echo $data['value'];exit;
+		$res=$this->home->userinsert($data);
+		// print_r($res);
+		echo $res;
+	}*/
+
+	// view user details call
+	public function view_userdetails()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission=$this->permission();
+			if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				$this->load->view('user-details');
+			}else{
+				redirect('admin/not_admin');
+			}
+		}else{
+			redirect('admin/index');
+		}
+	}
+
+	// get user data call
+	public function get_user_data()
+	{
+		// storing  request (ie, get/post) global array to a variable
+		$requestData= $_REQUEST;
+		$filterData=$_POST['data_id'];
+		if($filterData=='yes'){
+			$flagfilter=$filterData;
+		}
+		else{
+			$flagfilter='';
+		}
+		$user=$this->home->getuser($requestData,$flagfilter,$where=null);
+		echo $user;
+	}
+
+	//delete user data call
+	public function delete_user_data()
+	{
+		$data_ids = $_REQUEST['data_ids'];
+		$this->home->deluser($data_ids);
+	}
+
+	//delete single user data call
+	public function delete_single_user_data()
+	{
+		$data_id = $_REQUEST['data_id'];
+		$this->home->delsingleuser($data_id);
+	}
+
+	// manage booking call
+	public function manage_booking()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+			if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				if($this->input->get('user_id')){
+					$filter='user_id';
+					$data['query']=$filter;
+				}
+				else if($this->input->get('status_code')){
+					$filter='status_code';
+					$data['query']=$filter;
+				}
+				else{
+					$data['query']= NULL;
+				}
+				$this->load->view('manage-booking',$data);
+			}else{
+				redirect('admin/not_admin');
+			}
+		}else{
+			redirect('admin/index');
+		}
+	}
+
+	// booking details call
+	public function view_booking_details()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+			if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				$data['query']=$this->home->get_booking_details($this->input->get('id'));
+				if($data['query']){
+				$data['query4']=$this->home->get_explicit_selected_drivers($this->input->get('id'));
+				$data['query1']=$this->home->get_car_list();
+				$data['query2']=$this->home->get_driver_list();
+				}
+				$this->load->view('booking-details',$data);
+			}else{
+				redirect('admin/not_admin');
+			}
+		}else{
+			redirect('admin/index');
+		}
+	}
+
+	// get booking data call
+	public function get_booking_data()
+	{
+		// storing  request (ie, get/post) global array to a variable
+		$requestData= $_REQUEST;
+		$filterData=$_POST['data_id'];
+		if($filterData=='user-cancelled'){
+			$filterstatusid='4';
+			$filterbookingid='';
+		}
+		else if($filterData=='driver-unavailable'){
+			$filterstatusid='6';
+			$filterbookingid='';
+		}
+		else if($filterData=='completed'){
+			$filterstatusid='9';
+			$filterbookingid='';
+		}
+		else if(is_numeric($filterData)){
+			$filterstatusid='';
+			$filterbookingid=$filterData;
+		}
+		else{
+			$filterstatusid='';
+			$filterbookingid='';
+		}
+		$booking=$this->home->getbooking($requestData,$filterstatusid,$filterbookingid,$where=null);
+		echo $booking;
+	}
+	// get non disp booking data call
+	public function get_nondisp_booking_data()
+	{
+		// storing  request (ie, get/post) global array to a variable
+		$requestData= $_REQUEST;
+		$booking=$this->home->getnondispbooking($requestData,$where=null);
+		echo $booking;
+	}
+
+	//update booking call
+	public function update_booking_data()
+	{
+		// storing  request (ie, get/post) global array to a variable
+		$id= $_POST['id'];
+		$data_id= $_POST['data_id'];
+		$taxi_type = $_POST['taxi_type'];
+		$amount = $_POST['amount'];
+		$updatebooking=$this->home->updatebooking($id,$data_id,$taxi_type,$amount);
+		echo $updatebooking;
+	}
+
+	// multi booking delete call
+	public function multi_booking_delete()
+	{
+		$data=$_POST['result'];
+		$data=json_decode("$data",true);
+		//print_r($data);exit;
+		//echo $data['value'];exit;
+		$user=$this->home->deletemultibooking($data);
+		// print_r($res);
+		echo $user;
+	}
+
+	//delete booking data call
+	public function delete_booking_data()
+	{
+		$data_ids = $_REQUEST['data_ids'];
+		$this->home->delbooking($data_ids);
+	}
+
+	//delete single booking call
+	public function delete_single_booking_data()
+	{
+		$data_id = $_REQUEST['data_id'];
+		$this->home->delsinglebooking($data_id);
+	}
+
+	// manage driver call
+	public function manage_driver()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+			if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				if($this->input->get('flag')){
+					$filter='flag';
+					$data['query']=$filter;
+				}
+				else{
+					$data['query']= NULL;
+				}
+				$this->load->view('manage-driver',$data);
+			}else{
+				redirect('admin/not_admin');
+			}
+		}else{
+			redirect('admin/index');
+		}
+	}
+
+	// manage flagged driver call
+	public function manage_flagged_driver()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+			if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				$this->load->view('manage-flagged-driver');
+			}else{
+				redirect('admin/not_admin');
+			}
+		}else{
+			redirect('admin/index');
+		}
+	}
+
+	// driver details call
+	public function view_driver_details()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+			if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				$this->load->view('driver-details');
+			}else{
+				redirect('admin/not_admin');
+			}
+		}else{
+			redirect('admin/index');
+		}
+	}
+
+	// add driver call
+	public function add_driver()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+			if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				$this->load->view('add-driver');
+			}else{
+				redirect('admin/not_admin');
+			}
+		}else{
+			redirect('admin/index');
+		}
+	}
+
+	// insert driver data call
+	public function insert_driver()
+	{
+		if(isset($_POST['save']))
+		{
+			$config['upload_path'] = './driverimages/';
+			$config['allowed_types'] = 'gif|jpg|jpeg|png';
+			$config['max_size']    = '2000';
+			$config['max_width']  = '1024';
+			$config['max_height']  = '768';
+
+			$this->load->library('upload', $config);
+			if (!$this->upload->do_upload('driverimage'))
+			{
+				$response = $this->session->set_flashdata('error_msg', $this->upload->display_errors());
+				redirect(base_url().'admin/add_driver');
+				// uploading failed. $error will holds the errors.
+			}
+			else {
+				$email=$_POST['email'];
+				$username=$_POST['username'];
+				$check_email_username=$this->home->checkemailusername($email,$username);
+				if($check_email_username) {
+					$response = $this->session->set_flashdata('error_msg', 'email or username already exists');
+					redirect(base_url().'admin/add_driver');
+				}
+				else {
+					$upload_data = $this->upload->data();
+					$data = array(
+						'name' => $_POST['driverName'],
+						'user_name' => $_POST['username'],
+						'phone' => $_POST['driverPhone'],
+						'address' => $_POST['driverAddress'],
+						'email' => $_POST['email'],
+						'license_no' => $_POST['licenseno'],
+						'car_type' => $_POST['car_type'],
+						'car_no' => $_POST['carno'],
+						'gender' => $_POST['gender'],
+						'dob' => $_POST['dob'],
+						'Lieasence_Expiry_Date' => $_POST['licennex'],
+						'license_plate' => $_POST['licenseplate'],
+						'Insurance' => $_POST['insurance'],
+						'Car_Model' => $_POST['car_model'],
+						'Car_Make' => $_POST['car_make'],
+						'image' => $upload_data['file_name'],
+						'status' => 'Active'
+					);
+					$response = $this->home->insertdriverdata($data);
+					redirect(base_url() . 'admin/manage_driver');
+				}
+			}
+		}
+	}
+	// get driver data call
+	public function get_driver_data()
+	{
+		$requestData= $_REQUEST;
+		$filterData=$_POST['data_id'];
+		if($filterData=='yes'){
+			$flagfilter=$filterData;
+		}
+		else{
+			$flagfilter='';
+		}
+		// storing  request (ie, get/post) global array to a variable
+		$requestData= $_REQUEST;
+		$driver=$this->home->getdriver($requestData,$flagfilter,$where=null);
+		echo $driver;
+	}
+
+	//get select driver data call
+	public function get_select_driver_data()
+	{
+		// storing  request (ie, get/post) global array to a variable
+		$requestData= $_REQUEST;
+		$booking_id=$_POST['booking_id'];
+		$user=$this->home->getselectdriver($requestData,$booking_id,$where=null);
+		echo $user;
+	}
+
+	// get car type data call
+	public function get_cartype_data()
+	{
+		$cab_id=$_POST['cab_id'];
+		$cab_details=$this->home->getcartypedata($cab_id);
+		if($cab_details){
+			echo json_encode($cab_details);
+		}
+	}
+	//delete driver data call
+	public function delete_driver_data()
+	{
+		$data_ids = $_REQUEST['data_ids'];
+		$this->home->deldriver($data_ids);
+	}
+
+	//delete single driver data call
+	public function delete_single_driver_data()
+	{
+		$data_id = $_REQUEST['data_id'];
+		$this->home->delsingledriver($data_id);
+	}
+
+	// manage car type call
+	public function manage_car_type()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+			if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				$this->load->view('manage-cartype');
+			}else{
+				redirect('admin/not_admin');
+			}
+		}else{
+			redirect('admin/index');
+		}
+	}
+
+	// view car call
+	/*public function view_car()
+	{
+
+		if ($this->session->userdata('username-admin') || $this->input->cookie('username-admin', false)) {
+			$permission = $this->permission();
+			if (($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				$this->load->view('view_car');
+			} else {
+				redirect('admin/not_admin');
+			}
+		} else {
+			redirect('admin/index');
+		}
+	}*/
+
+	// edit car type call
+	public function view_cartype_details()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+			if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				$this->load->view('cartype-details');
+			}else{
+				redirect('admin/not_admin');
+			}
+		}else{
+			redirect('admin/index');
+		}
+	}
+	
+	// add car call
+	public function add_car()
+	{
+
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+			if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				$this->load->view('add-car');
+			}else{
+				redirect('admin/not_admin');
+			}
+		}else{
+			redirect('admin/index');
+		}
+	}
+
+	// insert car data call
+	public function insert_car()
+	{
+		if(isset($_POST['save']))
+		{
+			$config['upload_path'] = './car_image/';
+			$config['allowed_types'] = 'gif|jpg|jpeg|png';
+			$config['max_size']    = '2000';
+			$config['max_width']  = '1024';
+			$config['max_height']  = '768';
+
+			$this->load->library('upload', $config);
+			if (!$this->upload->do_upload('uploadImageFile'))
+			{
+				$response = $this->session->set_flashdata('error_msg', $this->upload->display_errors());
+				redirect(base_url().'admin/add_car');
+				// uploading failed. $error will holds the errors.
+			}
+			else {
+				$upload_data = $this->upload->data();
+				$data = array(
+					'cartype' => $_POST['cartype'],
+					'car_rate' => $_POST['carrate'],
+					'transfertype' => $_POST['transfertype'],
+					'intialkm' => $_POST['intialkm'],
+					'fromintialkm' => $_POST['fromintialkm'],
+					'fromintailrate' => $_POST['fromintailrate'],
+					'night_fromintailrate' => $_POST['night_fromintailrate'],
+					'timetype' => $_POST['timetype'],
+					'icon' => $upload_data['file_name'],
+					'description' => $_POST['description'],
+					'ride_time_rate' => $_POST['ride_time_rate'],
+					'night_ride_time_rate' => $_POST['night_ride_time_rate'],
+					'night_intailrate' => $_POST['night_intailrate'],
+					'seat_capacity' => $_POST['seating_capacity']
+				);
+				$response = $this->home->insertcardata($data);
+				redirect(base_url().'admin/manage_car_type');
+			}
+		}
+	}
+	// get car data call
+	public function get_car_data()
+	{
+		// storing  request (ie, get/post) global array to a variable
+		$requestData= $_REQUEST;
+		$user=$this->home->getcar($requestData,$where=null);
+		echo $user;
+	}
+
+	//delete car data call
+	public function delete_car_data()
+	{
+		$data_ids = $_REQUEST['data_ids'];
+		$this->home->delcar($data_ids);
+	}
+
+	//delete single car data call
+	public function delete_single_car_data()
+	{
+		$data_id = $_REQUEST['data_id'];
+		$this->home->delsinglecar($data_id);
+	}
+
+	//manage time type call
+	public function manage_time_type()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+			if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				$this->load->view('manage-daytime');
+			}else{
+				redirect('admin/not_admin');
+			}
+		}else{
+			redirect('admin/index');
+		}
+	}
+
+	// edit time type call
+	public function edit_time_type()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+			if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				$this->load->view('daytime-details');
+			}else{
+				redirect('admin/not_admin');
+			}
+		}else{
+			redirect('admin/index');
+		}
+	}
+
+	//get time type call
+	public function get_time_type_data()
+	{
+		// storing  request (ie, get/post) global array to a variable
+		$requestData= $_REQUEST;
+		$user=$this->home->gettimetype($requestData,$where=null);
+		echo $user;
+	}
+
+	// manage delay reasons call
+	public function manage_delay_reasons()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+			if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				$this->load->view('manage-delay-reason');
+			}else{
+				redirect('admin/not_admin');
+			}
+		}else{
+			redirect('admin/index');
+		}
+	}
+
+	// edit delay reason call
+	public function view_delayreason_details()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+			if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				$this->load->view('delayreason-details');
+			}else{
+				redirect('admin/not_admin');
+			}
+		}else{
+			redirect('admin/index');
+		}
+	}
+
+	// add delay reason call
+	public function add_reason()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+			if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				$this->load->view('add-reason');
+			}else{
+				redirect('admin/not_admin');
+			}
+		}else{
+			redirect('admin/index');
+		}
+	}
+
+	//get reason data call
+	public function get_reason_data()
+	{
+		// storing  request (ie, get/post) global array to a variable
+		$requestData= $_REQUEST;
+		$reason=$this->home->getreasons($requestData,$where=null);
+		echo $reason;
+	}
+
+	//delete reason data call
+	public function delete_reason_data()
+	{
+		$data_ids = $_REQUEST['data_ids'];
+		$this->home->delres($data_ids);
+	}
+
+	//delete single reason data call
+	public function delete_single_reason_data()
+	{
+		$data_id = $_REQUEST['data_id'];
+		$this->home->delsingleres($data_id);
+	}
+
+	// update settings call
+	public function update_settings()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+			if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+
+				$this->load->view('update_settings');
+			}else{
+				redirect('admin/not_admin');
+			}
+		}else{
+			redirect('admin/index');
+		}
+	}
+
+	public function update_user_status()
+	{
+		$data_id = $_REQUEST['data_id'];
+		$this->home->statususer($data_id);
+	}
+	public function update_driver_status()
+	{
+		$data_id = $_REQUEST['data_id'];
+		$result=$this->home->statusdriver($data_id);
+		if($result){
+			$json_array = array(
+                            //'driverId' => (int)$driveridarr,
+                            'driverId' => $data_id,
+                            'driver_status' => 0
+                        );
+                        $new_json_array = json_encode($json_array,JSON_UNESCAPED_SLASHES);
+                        //print_r($new_json_array);
+                        //exit;
+                        $url = "162.243.225.225:4040/changeDriverStatus?".$new_json_array;
+                        //$url = "192.168.1.118:4040/searchDriver?".$new_json_array;
+                        $ch = curl_init();
+                        curl_setopt($ch, CURLOPT_URL, $url);
+                        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+                        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+                        // This is what solved the issue (Accepting gzip encoding)
+                        curl_setopt($ch, CURLOPT_ENCODING, "gzip,deflate");
+                        $response = curl_exec($ch);
+                        curl_close($ch);
+                        if($response)
+                        {
+                        	return true;
+                        }
+		}
+	}
+	public function calculate_ride_rates()
+	{
+		if(isset($_POST['pickup_date_time']) && isset($_POST['cab_id']) && isset($_POST['approx_distance']) && isset($_POST['approx_time']))
+		{
+			//echo 'test';
+			$result=$this->home->calculaterates($_POST['pickup_date_time'],$_POST['cab_id'],$_POST['approx_distance'],$_POST['approx_time']);
+			echo $result;
+		}
+	}
+	/*public function delete()
+	{
+		$data=$_POST;
+		//print_r($data);exit;
+		//echo $data['value'];exit;
+       	$user=$this->home->deleteuser($data);
+		// print_r($res);
+       	echo $user;
+	}
+	public function multipledelete()
+	{
+		$data=$_POST;
+		//print_r($data);exit;
+		//echo $data['value'];exit;
+		$user=$this->home->deleteuser($data);
+		// print_r($res);
+		echo $user;
+	}*/
+
+
+
+	/*public function pointview()
+	{   
+	   if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+		$permission=$this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		 $this->load->view('admin-point');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	public  function userpointview()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission=$this->permission();
+			if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				$this->load->view('userpointview');
+			}else{
+				redirect('admin/not_admin');
+			}
+		}else{
+			redirect('admin/index');
+		}
+	}
+	public function cancelpointview()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission=$this->permission();
+			if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				$this->load->view('cancelpointview');
+			}else{
+				redirect('admin/not_admin');
+			}
+		}else{
+			redirect('admin/index');
+		}
+	}
+	public function SuccessFully_Booking()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission=$this->permission();
+			if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				$this->load->view('SuccessFully_Booking');
+			}else{
+				redirect('admin/not_admin');
+			}
+		}else{
+			redirect('admin/index');
+		}
+	}
+	 public function airportview()
+	{   
+	    if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission=$this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		 $this->load->view('admin-airport');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	 public function hourlyview()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission=$this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		 $this->load->view('admin-hourly');
+		 }else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	 public function outstationview()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission=$this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		 $this->load->view('admin-outstation');
+		 }else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	public function bookingdelete()
+	{
+		$data=$_POST;
+             //print_r($data);exit;
+              //echo $data['value'];exit;
+       $user=$this->home->deletebook($data);
+               // print_r($res);
+       echo $user;
+	}
+	 public function edit_user()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission=$this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		$this->load->view('admin-edit-userdetails');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	public function updateuser()
+	{
+		$data=$_POST;
        
-        if(!empty($_POST['FARE']) && !empty($_POST['UNIT'])){
-                $this->db->where('name','FARE');
-                $this->db->update("settings", array("value"=>$_POST['FARE']));
-                
-                $this->db->where('name','UNIT');
-                $this->db->update("settings", array("value"=>$_POST['UNIT']));
-                
-                unset($_POST['FARE']);
-                unset($_POST['UNIT']);
-            }
-        
-            $this->db->update("admin", $_POST);
-            $this->session->set_userdata(array("msg" => "data successfully updated", "type" => "success"));
-            redirect($this->config->base_url() . 'admin/settings');
-        }
-        $data['res'] = $this->db->get("admin")->row();
-        $data['set'] = $this->db->get("settings")->result();
+        $user=$this->home->edituser($data);
+       
+           echo $user;
+	}
+	 public function edit_point()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission=$this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		$this->load->view('edit-point');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
 
-        $this->load->view('layout/header');
-        $this->load->view('layout/sidebar');
-        $this->load->view("admin/settings", $data);
-        $this->load->view('layout/footer');
-    }
+	public function update_point()
+	{
+		$data=$_POST;
+       //print_r($data);exit;
+           //echo $data['value'];exit;
+        $point=$this->home->pointupdate($data);
+       // print_r($res);
+           echo $point;
+	}
+	 public function edit_airport()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission=$this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		$this->load->view('edit-airport');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	 public function edit_hourly()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		$this->load->view('edit-hourly');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	 public function edit_outstation()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		$this->load->view('edit-outstation');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
 
+	public function promocode()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		$this->load->view('add-promocode');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	public function insert_promocode()
+	{
+		$data=$_POST;
+   //echo $data['value'];exit;
+   $prom=$this->home->pormoadd($data);
+    // print_r($res);
+    echo $prom;
+	}
+	public function view_promocode()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		$this->load->view('view-promocode');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	public function promo_delete()
+	{
+		$data=$_POST;
+             //print_r($data);exit;
+              //echo $data['value'];exit;
+       $delete=$this->home->deleteprom($data);
+               // print_r($res);
+       echo $delete;
+	}
+	public function edit_promocode()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		$this->load->view('edit-promocode');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	public function update_promocode()
+	{
+		$data=$_POST;
+       //print_r($data);exit;
+           //echo $data['value'];exit;
+        $pt=$this->home->promoupdate($data);
+       // print_r($res);
+           echo $pt;
+	}
+	 public function taxi_details()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		$this->load->view('add-taxi-details');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	public  function insert_status()
+	{
+		$data=$_POST;
+		$status=$this->home->addstatus($data);
+		echo $status;
+	}
+	public function insert_taxi()
+	{
+		$data=$_POST;
+   //echo $data['value'];exit;
+
+			$taxi = $this->home->taxiadd($data);
+			echo $taxi;
+    // print_r($res);
+
+	}
+	public function insert_time()
+	{
+		$data=$_POST;
+		$taxi = $this->home->timeadd($data);
+		echo $taxi;
+	}
+	public  function insert_new_taxi5july()
+	{
+		$data=$_POST;
+		$taxi=$this->home->addtaxi($data);
+		// print_r($res);
+		echo $taxi;
+	}
+	public  function insert_new_taxi()
+	{
+		$data=$_POST;
+
+		$config = array(
+			'upload_path'   => $path,
+			'allowed_types' => 'jpg|gif|png',
+			'overwrite'     => 1,
+		);
+
+		$this->load->library('upload', $config);
+
+		$images = array();
+
+		foreach ($files['name'] as $key => $image) {
+			$_FILES['images[]']['name']= $files['name'][$key];
+			$_FILES['images[]']['type']= $files['type'][$key];
+			$_FILES['images[]']['tmp_name']= $files['tmp_name'][$key];
+			$_FILES['images[]']['error']= $files['error'][$key];
+			$_FILES['images[]']['size']= $files['size'][$key];
+
+			$fileName = $title .'_'. $image;
+
+			$images[] = $fileName;
+
+			$config['file_name'] = $fileName;
+
+			$this->upload->initialize($config);
+
+			if ($this->upload->do_upload('images[]')) {
+				$this->upload->data();
+			} else {
+				return false;
+			}
+		}
+
+		return $images;
+	}
+
+	 public function taxi_view()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		$this->load->view('view-cab-details');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+
+	public function edit_taxi()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		$this->load->view('edit-cab-details');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+
+
+	public function update_car()
+	{
+		$data=$_POST;
+		//print_r($data);exit;
+		//echo $data['value'];exit;
+		$taxi=$this->home->updatecar($data);
+		// print_r($res);
+		echo $taxi;
+	}
+
+	public function update_taxi()
+	{
+		$data=$_POST;
+       //print_r($data);exit;
+           //echo $data['value'];exit;
+        $taxi=$this->home->updatetaxi($data);
+       // print_r($res);
+           echo $taxi;
+	}
+	public function update_status()
+	{
+		$data=$_POST;
+		//print_r($data);exit;
+		//echo $data['value'];exit;
+		$status=$this->home->update_status($data);
+		// print_r($res);
+		echo $status;
+	}
+	public function update_time()
+	{
+		$data=$_POST;
+		$time=$this->home->updatetime($data);
+		echo $time;
+	}
+	public function delete_taxi()
+	{
+		$data=$_POST;
+             //print_r($data);exit;
+              //echo $data['value'];exit;
+       $user=$this->home->delcabdetails($data);
+               // print_r($res);
+       echo $user;
+	}
+	public  function delete_status()
+	{
+		$data=$_POST;
+		$status=$this->home->deletestatus($data);
+		echo $status;
+	}
+	public function delete_car()
+	{
+		$data=$_POST;
+		//print_r($data);exit;
+		//echo $data['value'];exit;
+		$user=$this->home->delcardetails($data);
+		// print_r($res);
+		echo $user;
+	}
+	public function change_password()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+		
+		$this->load->view('change-password');
+		}else{
+			redirect('admin/index');
+		}
+		
+	}
+	public function check_password()
+	{
+		$data=$_POST;
+       //print_r($data);exit;
+           //echo $data['value'];exit;
+        $pass=$this->home->updatepass($data);
+       // print_r($res);
+           echo $pass;
+	}
+	 public function taxi_airport()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		$this->load->view('view-cab-airport');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	 public function taxi_details_air()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		$this->load->view('add-taxi-air');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	 public function edit_airport_taxi()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		$this->load->view('edit-taxi-air');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	 public function taxi_hourly()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		$this->load->view('view-cab-hourly');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	 public function taxi_details_hourly()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		$this->load->view('add-taxi-hourly');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+
+	public function add_new_status()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+			if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				$this->load->view('add_status');
+			}else{
+				redirect('admin/not_admin');
+			}
+		}else{
+			redirect('admin/index');
+		}
+	}
+	 public function edit_hourly_taxi()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		$this->load->view('edit-taxi-hourly');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	public function edit_status()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+			if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				$this->load->view('edit_status');
+			}else{
+				redirect('admin/not_admin');
+			}
+		}else{
+			redirect('admin/index');
+		}
+	}
+	 public function  taxi_details_outstation()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		$this->load->view('add-taxi-outstation');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	public function taxi_outstation()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		$this->load->view('view-cab-outstation');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	  public function edit_outstation_taxi()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		$this->load->view('edit-taxi-outstation');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+	     redirect('admin/index');
+         }
+	}
+
+	public function Driver_Status()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+			if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				$this->load->view('view_driver_status');
+			}else{
+				redirect('admin/not_admin');
+			}
+		}else{
+			redirect('admin/index');
+		}
+
+	}
+	public function insert_driver()
+	{
+		$data=$_POST;
+  //print_r($data);exit;
+   $taxi=$this->home->driveradd($data);
+    // print_r($res);
+    echo $taxi;
+	}
+	  public function view_driver()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		$this->load->view('view-driver-details');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+
+	  public function edit_driver()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+			
+		$this->load->view('edit-driver');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	public function update_driver()
+	{
+		$data=$_POST;
+       //print_r($data);exit;
+           //echo $data['value'];exit;
+        $taxi=$this->home->updatedriver($data);
+       // print_r($res);
+           echo $taxi;
+	}
+	public function delete_driver()
+	{
+		$data=$_POST;
+             //print_r($data);exit;
+              //echo $data['value'];exit;
+       $user=$this->home->deletedriver($data);
+               // print_r($res);
+       echo $user;
+	}
+	  public function add_settings()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+			
+		$this->load->view('add-settings',array('error'=>''));
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	public function  set_time()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+			if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+
+				$this->load->view('view_time',array('error'=>''));
+			}else{
+				redirect('admin/not_admin');
+			}
+		}else{
+			redirect('admin/index');
+		}
+	}
+	public function  edit_time()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+			if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+
+				$this->load->view('set_time',array('error'=>''));
+			}else{
+				redirect('admin/not_admin');
+			}
+		}else{
+			redirect('admin/index');
+		}
+	}
+	
+	
+	public function upload()
+	{
+		$data=$_POST;
+		
+		
+		
+		if($_FILES['logo']['name']){
+		
+		$config = $this->set_upload_options();
+		//load the upload library
+		$this->load->library('upload');
+   
+        $this->upload->initialize($config);
+    
+ $imgInfo = getimagesize($_FILES["logo"]["tmp_name"]);
+
+		
+	 $extension = image_type_to_extension($imgInfo[2]);
+if ($extension != '.png' ){
+   $this->session->set_flashdata('item', array('message' => 'select only png image types','class' => 'error') );
+		
+			$d = $this->session->flashdata('item');
+
+			redirect('admin/add_settings');
 }
+           		   
+	
+else if (($imgInfo[0] != 130) && ($imgInfo[1] != 117)){
+   $this->session->set_flashdata('item', array('message' => 'select images of 130/117 size(logo)','class' => 'error') );
+		
+			$d = $this->session->flashdata('item');
 
+			redirect('admin/add_settings');
+}else{
+	if ( !$this->upload->do_upload('logo'))
+		{
+			
+			$this->session->set_flashdata('item', array('message' => $this->upload->display_errors('logo') ,'class' => 'error') );
+			
+			$d = $this->session->flashdata('item');
+
+			redirect('admin/add_settings');
+
+		}
+		else{
+			$data2 = array('upload_data' => $this->upload->data('logo'));
+			
+			 $data['logo']=$config['upload_path']."/logo.png";
+			
+		}
+}
+}if($_FILES['favicon']['name']){
+			$config = $this->set_upload_favicon();
+		//load the upload library
+		$this->load->library('upload');
+    
+            $this->upload->initialize($config);
+	
+			if ( !$this->upload->do_upload('favicon'))
+		{
+			
+			$this->session->set_flashdata('item', array('message' => $this->upload->display_errors('favicon'),'class' => 'error') );
+			
+			$d = $this->session->flashdata('item');
+
+			redirect('admin/add_settings');
+		}
+			else{
+		 $this->upload->overwrite = true;
+			$data1 = array('upload_datas' => $this->upload->data('favicon'));
+
+         $data['favicon']=$config['upload_path']."/".$data1['upload_datas']['file_name'];
+           	}
+		}
+		if(!$this->session->flashdata('item')){
+			
+			
+			
+		$taxi=$this->home->settings($data);
+		}else{
+			
+			$d=$this->session->flashdata('item');
+			redirect('admin/add_settings');
+		}
+		}
+ public function set_upload_options()
+	{
+		$config['file_name']='logo';
+		$config['upload_path'] = 'upload';
+        $config['allowed_types'] = 'png';
+	   
+		$config['maintain_ratio'] = TRUE;
+	   
+		$config['overwrite'] = 'TRUE';
+		return $config;
+	}	
+public function set_upload_favicon()
+	{
+		$config['file_name']='favicon';
+		$config['upload_path'] = 'upload';
+        $config['allowed_types'] = '*';
+	   
+		$config['maintain_ratio'] = TRUE;
+	    
+		$config['overwrite'] = 'TRUE';
+		return $config;
+	}
+	  public function dashboard()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+			
+		$this->load->view('dashbord');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	 
+	public function insert_role()
+	{
+		$data=$_POST;
+   //echo $data['value'];exit;
+        $role=$this->home->roleadd($data);
+    // print_r($res);
+    echo $role;
+	}
+	 
+	public function role_delete()
+	{
+		$data=$_POST;
+             //print_r($data);exit;
+              //echo $data['value'];exit;
+       $delete=$this->home->deleterole($data);
+               // print_r($res);
+       echo $delete;
+	}
+	 
+	public function update_role()
+	{
+		$data=$_POST;
+       //print_r($data);exit;
+           //echo $data['value'];exit;
+        $role=$this->home->updaterole($data);
+       // print_r($res);
+           echo $role;
+	}
+	public function add_role()
+	{
+		$data=$_POST;
+       //print_r($data);exit;
+           //echo $data['value'];exit;
+        $role=$this->home->addrole($data);
+       // print_r($res);
+           echo $role;
+	}
+	public function not_admin()
+	{
+	
+	 $this->load->view('admin-404');
+	}
+	public function role_management()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		$this->load->view('role-management');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	        redirect('admin/index');
+         }
+	}
+	
+	public function backened_user()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+			
+   $this->load->view('backend-user-lists');
+		
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	public function delete_backend()
+	{
+		$data=$_POST;
+             //print_r($data);exit;
+              //echo $data['value'];exit;
+       $user=$this->home->delete_backend_user($data);
+               // print_r($res);
+       echo $user;
+	}
+	 public function edit_bakend_user()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+		$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		$this->load->view('backend-edit-userdetails');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	
+ public function add_backend_user()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		 $this->load->view('backend-add-userdetails');
+		 }else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}	
+	public function insert_backend_user()
+	{
+		$data=$_POST;
+   //echo $data['value'];exit;
+   $res=$this->home->user_backend_insert($data);
+    // print_r($res);
+    echo $res;
+	}
+		public function update_backend_user()
+	{
+		$data=$_POST;
+       //print_r($data);exit;
+           //echo $data['value'];exit;
+        $user=$this->home->edit_backend_user($data);
+       // print_r($res);
+           echo $user;
+	}
+	 public function view_airmanage()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		 $this->load->view('airport-details');
+		 }else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	 public function view_package()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		 $this->load->view('package-details');
+		 }else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	 public function edit_air_manage()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+		$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		$this->load->view('edit-air-manage');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}	
+	public function edit_package()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+		$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		$this->load->view('edit-package');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}	
+	public function delete_air_manage()
+	{
+		$data=$_POST;
+             //print_r($data);exit;
+              //echo $data['value'];exit;
+       $user=$this->home->delete_air($data);
+               // print_r($res);
+       echo $user;
+	}
+	public function delete_package()
+	{
+		$data=$_POST;
+             //print_r($data);exit;
+              //echo $data['value'];exit;
+       $user=$this->home->delete_package($data);
+               // print_r($res);
+       echo $user;
+	}
+	public function add_airmanage()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		 $this->load->view('add-airmanage');
+		 }else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}	
+	public function add_package()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		 $this->load->view('add-package');
+		 }else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}	
+	
+	public function update_airmanage()
+	{
+		$data=$_POST;
+       //print_r($data);exit;
+           //echo $data['value'];exit;
+        $pt=$this->home->airmanage_update($data);
+       // print_r($res);
+           echo $pt;
+	}
+	public function update_package()
+	{
+		$data=$_POST;
+       //print_r($data);exit;
+           //echo $data['value'];exit;
+        $pt=$this->home->package_update($data);
+       // print_r($res);
+           echo $pt;
+	}
+	public function places_add()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+			
+   $this->load->view('add-places');
+   }else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	public function insert_places()
+	{
+		$data=$_POST;
+   //echo $data['value'];exit;
+   $res=$this->home->places_insert($data);
+    // print_r($res);
+    echo $res;
+	}
+	public function view_places()
+	{
+	if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				
+   $this->load->view('view-places');
+   }else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	public function delete_places()
+	{
+		$data=$_POST;
+             //print_r($data);exit;
+              //echo $data['value'];exit;
+       $user=$this->home->deleteplaces($data);
+               // print_r($res);
+       echo $user;
+	}
+	public function update_places()
+	{
+		$data=$_POST;
+       //print_r($data);exit;
+           //echo $data['value'];exit;
+        $role=$this->home->updateplace($data);
+       // print_r($res);
+           echo $role;
+	}
+	public function edit_places()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+					
+   $this->load->view('edit-places');
+   }else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	public function auto_places()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				
+			
+   $this->load->view('auto-places');
+   }else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	public function insert_airmanag()
+	{
+		$data=$_POST;
+       //print_r($data);exit;
+           //echo $data['value'];exit;
+        $role=$this->home->insertairport($data);
+       // print_r($res);
+           echo $role;
+	}
+	public function insert_package()
+	{
+		$data=$_POST;
+       //print_r($data);exit;
+           //echo $data['value'];exit;
+        $role=$this->home->insertpackage($data);
+       // print_r($res);
+           echo $role;
+	}
+public function searchs_p()
+	{
+		
+   $this->load->view('spoint');
+   
+	}
+	public function bookingstatus()
+	{
+		$data=$_POST;
+       //print_r($data);exit;
+           //echo $data['value'];exit;
+        $status=$this->home->status_update($data);
+       
+           echo $status;
+	}
+	public function pointdriver()
+	{
+	if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false))
+	{
+		$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				
+				
+   $this->load->view('admin-point-driver');
+   }else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	public function airportdriver()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				
+			
+		
+   $this->load->view('admin-airport-driver');
+   }else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	public function hourlydriver()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				
+			
+		
+   $this->load->view('admin-hourly-driver');
+   }else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	public function outdriver()
+	{
+		
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				
+			
+   $this->load->view('admin-out-driver');
+   }else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	public function addpoint()
+	{
+		
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				
+			
+   $this->load->view('admin-add-point');
+   }else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	public function admin_book()
+	{
+		$data=$_POST;
+       
+        $status=$this->home->book_admin($data);
+      
+           echo $status;
+	}
+	public function upload1()
+	{
+		$data=$_POST;
+		 $delete=$this->home->insta($data);
+	}
+	public function addair()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				
+			
+		
+   $this->load->view('admin-add-air');
+   }else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	
+	
+	public function addhourly()
+	{
+		
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				
+			
+   $this->load->view('admin-add-hourly');
+   }else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	public function addout()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				
+			
+		
+   $this->load->view('admin-add-out');
+   }else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	
+	public function view_page()
+	{
+		
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				
+			
+   $this->load->view('admin-view-static');
+   }else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	
+	
+	
+	
+	public function view_language()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		$this->load->view('view-language');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	
+	public function edit_language()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		$this->load->view('edit-language');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	
+	
+	
+	public function update_language_set()
+	{
+		$data=$_POST;
+       //print_r($data);exit;
+           //echo $data['value'];exit;
+        $pt=$this->home->languagesetupdate($data);
+       // print_r($res);
+           echo $pt;
+	}
+	
+	public function add_language()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		 $this->load->view('add-language');
+		 }else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	
+	public function insert_language()
+	{
+		$data=$_POST;
+    
+        $role=$this->home->insertlanguage($data);
+ 
+          echo $role;
+	}
+	public function upload_blog()
+	{
+		$data=$_POST;
+    
+        $role=$this->home->blog_upload($data);
+ 
+          echo $role;
+	}
+	
+	
+	public function add_select_language()
+	{
+		//$data=$_POST;
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+		$this->load->view('add-select-language');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+	}
+	
+	public function insert_addnew_languages()
+	{
+		$data=$_POST;
+   //echo $data['value'];exit;
+   $taxi=$this->home->languagesadd($data);
+    // print_r($res);
+    echo $taxi;
+	}
+	
+	public function languages_delete()
+	{
+		$data=$_POST;
+            
+       $user=$this->home->delete_langauge($data);
+              
+       echo $user;
+	}
+	public function add_page()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				
+			
+		
+   $this->load->view('admin-add-static');
+   }else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+   
+	}
+	public function add_banner()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				
+			
+		
+   $this->load->view('admin-add-banner');
+   }else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+   
+	}
+	
+	public function set_upload_baner()
+	{
+		$config['file_name']='banner-inner';
+		$config['upload_path'] = 'assets/images/images';
+        $config['allowed_types'] = 'png';
+	   
+		$config['maintain_ratio'] = TRUE;
+	   
+		$config['overwrite'] = 'TRUE';
+		return $config;
+	}
+	public function set_upload_taxi()
+	{
+		$config['file_name']='banner-taxi';
+		$config['upload_path'] = 'img';
+		$config['allowed_types'] = 'jpeg';
+
+		$config['maintain_ratio'] = TRUE;
+
+		$config['overwrite'] = 'TRUE';
+		return $config;
+	}
+	public function set_upload_car()
+	{
+		$config['file_name']='car';
+		$config['upload_path'] = 'application/views/img/';
+        $config['allowed_types'] = 'png';
+	   
+		$config['maintain_ratio'] = TRUE;
+	   
+		$config['overwrite'] = 'TRUE';
+		return $config;
+	}	
+	public function banner()
+	{
+		$data=$_POST;
+		
+		if(isset($_FILES['blog_content']['name'])){
+		
+		$config = $this->set_upload_baner();
+		$this->load->library('upload');
+        $this->upload->initialize($config);
+    
+        $imgInfo = getimagesize($_FILES["blog_content"]["tmp_name"]);
+        $extension = image_type_to_extension($imgInfo[2]);
+        if ($extension != '.png' ){
+           $this->session->set_flashdata('item', array('message' => 'select only png image types','class' => 'error') );
+		
+			$d = $this->session->flashdata('item');
+
+			redirect('admin/add_banner');
+        }
+	
+        else if (($imgInfo[0] != 361) && ($imgInfo[1] != 403)){
+            $this->session->set_flashdata('item', array('message' => 'select images of 361/403 size(baner1)','class' => 'error') );
+		
+			$d = $this->session->flashdata('item');
+
+			redirect('admin/add_banner');
+        }else{
+	        if ( !$this->upload->do_upload('blog_content'))
+		    {
+			
+			   $this->session->set_flashdata('item', array('message' => $this->upload->display_errors('blog_content') ,'class' => 'error') );
+			
+			   $d = $this->session->flashdata('item');
+
+			   redirect('admin/add_banner');
+
+		    }
+		    else{
+			   $data2 = array('upload_data' => $this->upload->data('blog_content'));
+			
+			   echo $data['blog_content']=$config['upload_path']."/banner-inner.png";
+			
+		    }
+        }
+}  if(isset($_FILES['baner_car']['name'])){
+		$config = $this->set_upload_car();
+		
+		$this->load->library('upload');
+    
+        $this->upload->initialize($config);
+	    $imgInfo = getimagesize($_FILES["baner_car"]["tmp_name"]);
+        $extension = image_type_to_extension($imgInfo[2]);
+        if ($extension != '.png' ){
+           $this->session->set_flashdata('item', array('message' => 'select only png image types','class' => 'error') );
+		
+			$d = $this->session->flashdata('item');
+
+			redirect('admin/add_banner');
+        }
+	
+        else if (($imgInfo[0] != 466) && ($imgInfo[1] != 264)){
+            $this->session->set_flashdata('item', array('message' => 'select images of 466/264 size(banercar)','class' => 'error') );
+		
+			$d = $this->session->flashdata('item');
+
+			redirect('admin/add_banner');
+        }else{
+		if ( !$this->upload->do_upload('baner_car'))
+		{
+			
+			$this->session->set_flashdata('item', array('message' => $this->upload->display_errors('favicon'),'class' => 'error') );
+			
+			$d = $this->session->flashdata('item');
+
+			redirect('admin/add_banner');
+		}
+		else{
+		    $this->upload->overwrite = true;
+			$data1 = array('upload_datas' => $this->upload->data('baner_car'));
+            echo $data['baner_car']=$config['upload_path']."/car.png";
+	
+			}
+		}
+}
+		if(!$this->session->flashdata('item')){
+		
+		$taxi=$this->home->baners($data);
+		}else{
+			
+			$d=$this->session->flashdata('item');
+			redirect('admin/add_banner');
+		}
+}
+   public function add_pages()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			$permission = $this->permission();
+		if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				
+			
+		
+		$this->load->view('add-pages');
+		}else{
+			redirect('admin/not_admin');
+		}
+		}else{
+	     redirect('admin/index');
+         }
+   
+	}
+	 
+	public function insert_page()
+	{
+		$data=$_POST;
+    
+        $role=$this->home->page_insert($data);
+ 
+          echo $role;
+	}
+	public function view_pages()
+	{
+		$this->load->view('view-pages');
+	}
+	public function delete_pages()
+	{
+		$data=$_POST;
+             //print_r($data);exit;
+              //echo $data['value'];exit;
+       $user=$this->home->deletepages($data);
+               // print_r($res);
+       echo $user;
+	}
+	public function edit_pages()
+	{
+		$this->load->view('edit-pages');
+	}
+	public function update_pages()
+	{
+		$data=$_POST;
+             //print_r($data);exit;
+              //echo $data['value'];exit;
+       $user=$this->home->pages_updates($data);
+               // print_r($res);
+       echo $user;
+	}
+	public function wallet_list()
+	{
+	
+   $this->load->view('wallet_lists');
+  
+	}public function select_driver()
+	{
+		$data=$_POST;
+
+$paypal=$this->home->driver_assign_auto($data);
+
+echo $paypal;
+	}
+	public function callback_list()
+	{
+	
+   $this->load->view('callback_lists');
+  
+	}
+	public function approval_driver()
+	{
+		$data=$_POST;
+             //print_r($data);exit;
+              //echo $data['value'];exit;
+       $user=$this->home->driver_approvel($data);
+               // print_r($res);
+       echo $user;
+	}
+	public function callback_delete()
+	{
+		$data=$_POST;
+             //print_r($data);exit;
+              //echo $data['value'];exit;
+       $user=$this->home->delete_callback($data);
+               // print_r($res);
+       echo $user;
+	}public function rating()
+	{
+		$data=$_POST;
+		 $user=$this->home->rate_driver($data);
+		 if($user==true){
+			 $this->load->view('rating');
+		 }
+		
+	}*/
+
+
+	// Language change code for mobile apps Edited
+	public function languageChageForDriverApp(){
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			 $permission = $this->permission();
+				if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				//$this->load->helper('language_helper');
+				$this->db->select('language_name');
+				$query = $this->db->get('app_languages');
+				$allLanguages = $query->result_array();
+
+				if(isset($allLanguages[0]['language_name'])){
+					  $currentlanguage=$allLanguages[0]['language_name'];
+				}
+
+				$viewData['allLanguages']=$allLanguages;
+				//$viewData['languageMeta']=$languageMeta;
+
+				$this->load->view('view-appLanguage',$viewData);
+			}else{
+				redirect('admin/not_admin');
+			}
+  		}else{
+ 		redirect('admin/index');
+		}
+	}
+
+	// Show stored language call
+	public function showStoredLanguage(){
+		$request = $this->input->post();
+		$currentlanguage= $request['fetchLanguage'];
+
+		$app= $request['app'];
+		if($app=='user'){
+				$table='user_app_language';
+		}else{
+				$table='app_languages';
+		}
+
+		$this->db->select('language_meta');
+		$this->db->where('language_name', $currentlanguage);
+		$query = $this->db->get($table);
+		$languageMeta = $query->row();
+		$languageMeta=json_decode($languageMeta->language_meta, true);
+		//var_dump($languageMeta);
+		print json_encode($languageMeta);
+	}
+
+	// Save new language call
+	public function saveNewLanguage()
+	{
+		$request = $this->input->post();
+		$newLanguage= $request['newLanguage'];
+		// $this->load->helper('language_helper');
+		// $getArray=getLanguageForDriverApp();
+		// $getArray=json_encode($getArray);
+		$app= $request['app'];
+		if($app=='user'){
+				$table='user_app_language';
+		}else{
+				$table='app_languages';
+		}
+
+		$this->db->select("count(*) as count");
+		$this->db->where("language_name",$newLanguage);
+		$this->db->from($table);
+		$count = $this->db->get()->row();
+		if($count->count > 0) {
+			$this->db->where("language_name",language_name);
+			$result = $this->db->update('language_name', $newLanguage);
+		}else {
+			$ins = array(
+										'language_name' => $newLanguage,
+										'language_meta' => '',
+										'status'  => '0'
+									);
+		 $result=$this->db->insert($table, $ins);
+		}
+		if($result){
+			echo 1;
+		}else{
+			echo 0;
+		}
+	}
+
+	// Save driver app language call
+	public function saveDriverApplang()
+	{
+ 		ob_start();
+		$request = $this->input->post();
+
+		$hidden_lang=$request['hidden_lang'];
+		$languageMeta=json_encode($request);
+
+
+
+		 $data = array( 'language_meta' => $languageMeta);
+		 $this->db->where('language_name', $hidden_lang);
+		 $result=$this->db->update('app_languages', $data);
+		 redirect(base_url().'admin/languageChageForDriverApp');
+	}
+
+	// Delete app langauge all
+	public function deleteAppLanguage(){
+		$request = $this->input->post();
+		$id=$request['id'];
+		$this->db->where('id', $id);
+		$del=$this->db->delete('app_languages');
+		if($del){
+			echo 1;
+		}else {
+			echo 0;
+		}
+	}
+
+	// Language change for user app call
+	public function languageChageForUserApp()
+	{
+		if($this->session->userdata('username-admin') ||   $this->input->cookie('username-admin', false)){
+			 	$permission = $this->permission();
+				if(($this->session->userdata('role-admin') == 'admin') || ($permission == "access")) {
+				//$this->load->helper('language_helper');
+				$this->db->select('language_name');
+				$query = $this->db->get('user_app_language');
+				$allLanguages = $query->result_array();
+
+				if(isset($allLanguages[0]['language_name'])){
+						$currentlanguage=$allLanguages[0]['language_name'];
+				}
+
+				$viewData['allLanguages']=$allLanguages;
+				//$viewData['languageMeta']=$languageMeta;
+
+				$this->load->view('view-userAppLanguage',$viewData);
+			}else{
+			redirect('admin/not_admin');
+			}
+		}else{
+		redirect('admin/index');
+		}
+	}
+
+	// Save user app language call
+	public function saveUserApplang()
+	{
+ 		ob_start();
+		$request = $this->input->post();
+
+		$hidden_lang=$request['hidden_lang'];
+		$languageMeta=json_encode($request);
+	 	$data = array( 'language_meta' => $languageMeta);
+	 	$this->db->where('language_name', $hidden_lang);
+	 	$result=$this->db->update('user_app_language', $data);
+	 	redirect(base_url().'admin/languageChageForUserApp');
+	}
+
+	// Delete user app langauge call
+	public function deleteUserAppLanguage(){
+		$request = $this->input->post();
+		$id=$request['id'];
+		$this->db->where('id', $id);
+		$del=$this->db->delete('user_app_language');
+		if($del){
+			echo 1;
+		}else {
+			echo 0;
+		}
+	}
+
+	// Set app default language call
+	public function setAppDefaultLanguage()
+	{
+		$request = $this->input->post();
+		$language=$request['language'];
+		$app=$request['app'];
+		if($app=='user'){
+				$table='user_app_language';
+		}else{
+				$table='app_languages';
+		}
+
+		$data = array( 'status' => '0');
+		$this->db->where('status', '1');
+		$result=$this->db->update($table, $data);
+
+		if($result){
+			$data = array( 'status' => '1');
+			$this->db->where('language_name', $language);
+			$setLanguage=$this->db->update($table, $data);
+		}
+		if($setLanguage)	{	echo 1;	}else{	echo 0;	}
+	}
+     
+}
 /* End of file welcome.php */
 /* Location: ./application/controllers/welcome.php */
+?>
